@@ -32,18 +32,18 @@
 #define STACKPTR	off5
 
 #define CALL(fn)			\
-	mov	fn, r63			\
+	mov	fn, r63			|\
 	call	lr0, __call_helper
 #define RET				\
 	call	lr0, __ret_helper
 
 #define PANIC(reason)			\
-	mov	reason, r3		\
+	mov	reason, r3		|\
 	call	lr0, __panic
 #define PANIC_DIE	0
 
 #define DEBUGIRQ(reason)			\
-	mov	reason, r63			\
+	mov	reason, r63			|\
 	mov	IRQHI_DEBUG, SPR_MAC_IRQHI
 #define DEBUG_PANIC	0
 
