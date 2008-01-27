@@ -52,13 +52,7 @@
 
 
 entry_point:	; ------ ENTRY POINT ------
-	; Clear the SHM
-	mov	0x7FF, off0
- loop:
-	mov	0, [0, off0]
-	sub	off0, 1, off0
-	jne	off0, 0, loop-
-
+	; SHM and registers are already cleared by the kernel
 	; Initialize meta information
 	mov	0x129, [SHM_UCODEREV]	; We emulate a v4 firmware
 	mov	0, [SHM_UCODEPATCH]
@@ -105,5 +99,5 @@ __ret_helper:
 __panic:
 	; The Panic reason is in r3. We can read that from the kernel.
 	DEBUGIRQ(DEBUG_PANIC)
- _panic_busyloop:
- 	jmp	_panic_busyloop
+ loop:
+ 	jmp loop-
