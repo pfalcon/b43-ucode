@@ -128,3 +128,5 @@ __panic:
 	DEBUGIRQ(DEBUG_PANIC)
  loop:
  	jmp loop-
+
+// vim: syntax=b43 ts=8
