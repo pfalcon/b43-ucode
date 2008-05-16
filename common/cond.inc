@@ -39,3 +39,5 @@
 #define COND_TRUE		EXTCOND(CONDREG_7, 15)		/* Always true */
 
 #endif /* EXTERNAL_CONDITIONS_H_ */
+
+// vim: syntax=b43 ts=8

@@ -553,3 +553,5 @@
 
 
 #endif /* SPECIAL_PURPOSE_REGISTER_H_ */
+
+// vim: syntax=b43 ts=8

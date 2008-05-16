@@ -102,3 +102,5 @@
 #define SHM_PRETBTT		SHM(0x096) /* pre-TBTT in us */
 
 #endif /* SHARED_MEMORY_H_ */
+
+// vim: syntax=b43 ts=8
