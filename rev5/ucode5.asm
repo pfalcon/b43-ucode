@@ -53,24 +53,21 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	/* We encode our versioning info in the "time" field. */
 	mov VERSION, [SHM_UCODETIME]
 
- loop:
-	mov IRQLO_MAC_SUSPENDED, SPR_MAC_IRQLO
-	jmp loop-
 	/* Initialize the hardware */
-
 	mov 0, SPR_GPIO_Out			/* Disable any GPIO pin */
 	mov 0, SPR_PSM_0x4e			/* FIXME needed? */
 	mov 0, SPR_PSM_0x0c			/* FIXME what is this? */
 	mov 32786, SPR_SCC_Divisor		/* Init slow clock control */
 	mov 0x0002, SPR_SCC_Control		/* Init slow clock control */
-	or SPR_PHY_HDR_Parameter, 2, SPR_PHY_HDR_Parameter
+	or SPR_PHY_HDR_Parameter, 2, SPR_PHY_HDR_Parameter /* PHY clock on */
 	mov 0, Ra				/* Read PHY version register */
 	call lr0, phy_read
 	orx 7, 0, Ra, 0, [SHM_PHYVER]
 	srx 3, 8, Ra, 0, [SHM_PHYTYPE]
-	mov 0x39, [0xC0]			/* FIXME is this needed? */
-	mov 0x50, [0xC2]			/* FIXME is this needed? */
-/*TODO init TX control fields*/
+	mov 0x39, [0xC0]			/* FIXME this sets probe resp context block */
+	mov 0x50, [0xC2]			/* FIXME what is this? */
+	mov 0xFC00, [SHM_PRPHYCTL]		/* Probe response PHY TX control word */
+	mov 0xFF00, [SHM_ACKCTSPHYCTL]		/* ACK/CTS PHY TX control word */
 	mov 2, SPR_PHY_HDR_Parameter
 	mov R_MIN_CONTWND, R_CUR_CONTWND
 	and SPR_TSF_Random, R_CUR_CONTWND, SPR_IFS_BKOFFDELAY
@@ -78,21 +75,47 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov lo16(280000), SPR_TSF_GPT0_CNTLO	/* GP Timer 0: Counter = 280,000 */
 	mov hi16(280000), SPR_TSF_GPT0_CNTHI
 
+/* -- The MAC suspend loop -- */
+ sleep:
 	mov SHM_UCODESTAT_SUSP, [SHM_UCODESTAT]
-
-/* -- The main event loop -- */
- _sleep:
 	mov IRQLO_MAC_SUSPENDED, SPR_MAC_IRQLO
-	orx 0, 15, 0, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: Start */
- loop:
-	jnext COND_MACEN, r0, r0, loop-
+	orx 0, 15, 0, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: clear Start */
+ self:	jnext COND_MACEN, r0, r0, self-
+	mov SHM_UCODESTAT_ACTIVE, [SHM_UCODESTAT]
 
- _evloop_begin:
+	mov 0, SPR_BRC
+	mov 0xFFFF, SPR_BRCL_0
+	mov 0xFFFF, SPR_BRCL_1
+	mov 0xFFFF, SPR_BRCL_2
+	mov 0xFFFF, SPR_BRCL_3
+	or SPR_RXE_0x08, 0x0004, SPR_RXE_0x08
+ self:	jnzx 0, 2, SPR_RXE_0x08, 0, self-	/* Wait for 0x4 to clear */
+	orx 0, 15, 1, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: Start */
+	mov 0, SPR_BRCL_0
+	mov 0, SPR_BRCL_1
+	mov 0, SPR_BRCL_2
+	mov 0, SPR_BRCL_3
+	/* TODO: setup TX status and PMQ discarding (MACCTL hi) */
+	mov 0x7360, SPR_BRWK_0
+	mov 0x0000, SPR_BRWK_1
+	mov 0x730F, SPR_BRWK_2
+	mov 0x0057, SPR_BRWK_3
+
+/* -- Restart the event loop -- */
+eventloop_restart:
 
 	// TODO
 
-	jnext COND_MACEN, r0, r0, _sleep
-	jmp _evloop_begin
+	jnext COND_MACEN, r0, r0, sleep
+
+eventloop_idle:
+	jext COND_PSM(0), r0, r0, eventloop_restart	/* FIXME: What's PSM condition bit 0? */
+	//TODO: if CCA -> restart
+	//TODO: if BG noise measuring -> restart
+	jnzx 0, SHM_HF_MI_TXBTCHECK, [SHM_HF_MI], 0, eventloop_restart
+	mov 0xFFFF, SPR_MAC_MAX_NAP
+	nap						/* .oO( ZzzzZZZzzz..... ) */
+	jmp eventloop_restart
 
 /* --- Function: Read from a PHY register ---
  * Link Register: lr0
@@ -100,11 +123,9 @@ entry_point:	/* ------ ENTRY POINT ------ */
  * The Data is returned in Ra.
  */
 phy_read:
- busy:
-	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
+ busy:	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
 	orx 0, 12, 1, Ra, SPR_Ext_IHR_Address
- busy:
-	jnzx 0, 12, SPR_Ext_IHR_Address, 0, busy-
+ busy:	jnzx 0, 12, SPR_Ext_IHR_Address, 0, busy-
 	mov SPR_Ext_IHR_Data, Ra
 	ret lr0, lr0
 
@@ -114,19 +135,16 @@ phy_read:
  * The Data to write is passed in Rb
  */
 phy_write:
- busy:
-	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
+ busy:	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
 	mov Rb, SPR_Ext_IHR_Data
 	orx 0, 13, 1, Ra, SPR_Ext_IHR_Address
- busy:
-	jnzx 0, 13, SPR_Ext_IHR_Address, 9, busy-
+ busy:	jnzx 0, 13, SPR_Ext_IHR_Address, 9, busy-
 	ret_after_jmp lr0, lr0
 
 /* --- Function: Lowlevel panic helper --- */
 __panic:
 	/* The Panic reason is in r3. We can read that from the kernel. */
 	DEBUGIRQ(DEBUG_PANIC)
- loop:
- 	jmp loop-
+ self:	jmp self-
 
 // vim: syntax=b43 ts=8

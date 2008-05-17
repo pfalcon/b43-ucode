@@ -4,7 +4,11 @@
 /* Definitions for the External Conditions */
 
 #define EXTCOND(reg, bit)	((bit) | ((reg) << 4))
-#define EXTCOND_EOI(reg, bit)	(EXTCOND(reg, bit) | 0x80)
+
+/* Wrap a condition in the EOI() wrapper to EOI it */
+#define EOI(ext_condition)	((ext_condition) | 0x80)
+
+
 
 /* RX condition register */
 #define CONDREG_RX		0
@@ -28,6 +32,7 @@
 
 /* PSM condition register */
 #define CONDREG_PSM		5
+#define COND_PSM(bit)		EXTCOND(CONDREG_PSM, bit)
 
 /* RCM condition register */
 #define CONDREG_RCM		6

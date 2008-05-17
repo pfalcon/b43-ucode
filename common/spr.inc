@@ -67,7 +67,7 @@
 #define SPR_RXE_0x7a				spr03d
 #define SPR_RXE_0x7c				spr03e
 #define SPR_RXE_0x7e				spr03f
-#define SPR_PSM_0x00				spr040
+#define SPR_MAC_MAX_NAP				spr040
 #define SPR_MAC_CTLHI				spr041
 #define SPR_MAC_IRQLO				spr042
 #define SPR_MAC_IRQHI				spr043
