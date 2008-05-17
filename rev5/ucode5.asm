@@ -20,6 +20,7 @@
 #include "../common/spr.inc"
 #include "../common/shm.inc"
 #include "../common/cond.inc"
+#include "../common/stack.inc"
 
 
 #define PANIC(reason)		\
@@ -52,6 +53,8 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov 0xFFFF, [SHM_UCODEDATE]
 	/* We encode our versioning info in the "time" field. */
 	mov VERSION, [SHM_UCODETIME]
+
+	mov 0x7FF, R_STACK_POINTER
 
 	/* Initialize the hardware */
 	mov 0, SPR_GPIO_Out			/* Disable any GPIO pin */
@@ -131,20 +134,84 @@ phy_read:
 
 /* --- Function: Write to a PHY register ---
  * Link Register: lr0
- * The PHY Address is passed in Ra
- * The Data to write is passed in Rb
+ * The PHY Address is passed in Ra.
+ * The Data to write is passed in Rb.
  */
 phy_write:
  busy:	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
 	mov Rb, SPR_Ext_IHR_Data
 	orx 0, 13, 1, Ra, SPR_Ext_IHR_Address
- busy:	jnzx 0, 13, SPR_Ext_IHR_Address, 9, busy-
+ busy:	jnzx 0, 13, SPR_Ext_IHR_Address, 0, busy-
 	ret_after_jmp lr0, lr0
+
+/* --- Function: Write to a PHY register. Don't flush ---
+ * Link Register: lr0
+ * The PHY address is passed in Ra.
+ * The Data to write is passed in Rb.
+ * This function will not busywait to flush the data write.
+ * Use phy_write(), if you want flushing.
+ */
+phy_write_noflush:
+ busy:	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
+	mov Rb, SPR_Ext_IHR_Data
+	orx 0, 13, 1, Ra, SPR_Ext_IHR_Address
+	ret lr0, lr0
+
+/* --- Function: Read from a Radio register ---
+ * Link Register: lr0
+ * The Radio Address is passed in Ra
+ * The Data is returned in Ra
+ */
+radio_read:
+	PUSH(SPR_PC0)
+	PUSH(Rb)
+	mov Ra, Rb	/* Rb = radio address */
+	mov 0, Ra
+	jnzx 0, MACCTL_RADIOLOCK, SPR_MAC_CTLHI, 0, out+
+	mov 0xB, Ra	/* PHY register 0xB */
+	call lr0, phy_write
+	mov 0xD, Ra	/* PHY register 0xD */
+	call lr0, phy_read
+ out:
+	/* The radio register content (or zero, if the
+	 * radio was locked) is in Ra */
+	POP(Rb)
+	POP(SPR_PC0)
+	ret lr0, lr0
+
+/* --- Function: Write to a Radio register ---
+ * Link Register: lr0
+ * The Radio Address is passed in Ra
+ * The Data to write is passed in Rb
+ * Ra and Rb are clobbered
+ */
+radio_write:
+	PUSH(SPR_PC0)
+	PUSH(Rc)
+	PUSH(Rd)
+	jnzx 0, MACCTL_RADIOLOCK, SPR_MAC_CTLHI, 0, out+
+	mov Ra, Rc	/* Rc = Radio address */
+	mov Rb, Rd	/* Rd = data */
+	mov 0xB, Ra	/* PHY register 0xB */
+	mov Rc, Rb
+	call lr0, phy_write_noflush
+	mov 0xD, Ra	/* PHY register 0xD */
+	mov Rd, Rb
+	call lr0, phy_write_noflush
+ out:
+	POP(Rd)
+	POP(Rc)
+	POP(SPR_PC0)
+	ret lr0, lr0
 
 /* --- Function: Lowlevel panic helper --- */
 __panic:
 	/* The Panic reason is in r3. We can read that from the kernel. */
 	DEBUGIRQ(DEBUG_PANIC)
  self:	jmp self-
+
+
+
+#include "../common/stack.asm"
 
 // vim: syntax=b43 ts=8

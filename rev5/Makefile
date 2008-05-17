@@ -3,10 +3,10 @@ PREFIX ?= /lib/firmware/b43-open
 
 all: firmware
 
-ucode5.ucode: ucode5.asm
+ucode5.ucode: ucode5.asm ../common/stack.asm
 	$(BCMASM) ucode5.asm ucode5
 
-firmware: ucode5.ucode ../common/spr.inc ../common/shm.inc ../common/cond.inc
+firmware: ucode5.ucode ../common/gpr.inc ../common/spr.inc ../common/shm.inc ../common/cond.inc ../common/stack.inc
 
 install:
 	-install -d -o 0 -g 0 -m 755 $(PREFIX)

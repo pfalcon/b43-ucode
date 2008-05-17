@@ -2,17 +2,22 @@
 #define GENERAL_PURPOSE_REGISTERS_H_
 
 /* Registers with a special function throughout the whole code. */
-#define R_MIN_CONTWND	r3
-#define R_MAX_CONTWND	r4
-#define R_CUR_CONTWND	r5
-#define R_SHORT_RETRY	r6
-#define R_LONG_RETRY	r7
-#define R_DTIM_CNT	r8
-#define R_SEQ_COUNT	r9
-#define R_BEAC0_LEN	r21
-#define R_BEAC1_LEN	r22
-#define R_SHORT_FB	r23
-#define R_LONG_FB	r24
+#define R_MIN_CONTWND		r3
+#define R_MAX_CONTWND		r4
+#define R_CUR_CONTWND		r5
+#define R_SHORT_RETRY		r6
+#define R_LONG_RETRY		r7
+#define R_DTIM_CNT		r8
+#define R_SEQ_COUNT		r9
+#define R_BEAC0_LEN		r21
+#define R_BEAC1_LEN		r22
+#define R_SHORT_FB		r23
+#define R_LONG_FB		r24
+
+/* Registeres used by the stack implementation only. */
+#define R_STACK_POINTER		r35
+#define R_STACK_SCRATCH0	r36
+#define R_STACK_SCRATCH1	r37
 
 /* General purpose registers (r38 - r63) */
 #define Ra	r38

@@ -99,13 +99,13 @@
 #define SPR_BRWK_1				spr05d
 #define SPR_BRWK_2				spr05e
 #define SPR_BRWK_3				spr05f
-#define SPR_Base_0				spr060
-#define SPR_Base_1				spr061
-#define SPR_Base_2				spr062
-#define SPR_Base_3				spr063
-#define SPR_Base_4				spr064
-#define SPR_Base_5				spr065
-#define SPR_Base_6				spr066
+#define SPR_BASE0				spr060
+#define SPR_BASE1				spr061
+#define SPR_BASE2				spr062
+#define SPR_BASE3				spr063
+#define SPR_BASE4				spr064
+#define SPR_BASE5				spr065
+#define SPR_BASE6				spr066
 #define SPR_PSM_0x4e				spr067
 #define SPR_PC0					spr068
 #define SPR_PC1					spr069
@@ -550,6 +550,25 @@
 #define IRQHI_TX_OK		0x2000
 #define IRQHI_PHY_G_CHANGED	0x4000
 #define IRQHI_TIMEOUT		0x8000
+
+
+/* MAC Control High bits */
+#define MACCTL_BE		0 /* bit0: Big Endian mode */
+#define MACCTL_INFRA		1 /* bit1: Infrastructure mode */
+#define MACCTL_AP		2 /* bit2: AccessPoint mode */
+#define MACCTL_RADIOLOCK	3 /* bit3: Radio lock */
+#define MACCTL_BEACPROMISC	4 /* bit4: Beacon Promiscuous */
+#define MACCTL_KEEP_BADPLCP	5 /* bit5: Keep frames with bad PLCP */
+#define MACCTL_KEEP_CTL		6 /* bit6: Keep control frames */
+#define MACCTL_KEEP_BAD		7 /* bit7: Keep bad frames (FCS) */
+#define MACCTL_PROMISC		8 /* bit8: Promiscuous mode */
+#define MACCTL_HWPS		9 /* bit9: Hardware Power Saving */
+#define MACCTL_AWAKE		10 /* bit10: Device is awake */
+#define MACCTL_CLOSEDNET	11 /* bit11: Closed net (no SSID bcast) */
+#define MACCTL_TBTTHOLD		12 /* bit12: TBTT Hold */
+#define MACCTL_DISCTXSTAT	13 /* bit13: Discard TX status */
+#define MACCTL_DISCPMQ		14 /* bit14: Discard Power Management Queue */
+#define MACCTL_GMODE		15 /* bit15: G Mode */
 
 
 #endif /* SPECIAL_PURPOSE_REGISTER_H_ */
