@@ -14,7 +14,7 @@
  *   GNU General Public License for more details.
  */
 
-#define VERSION		1
+#define VERSION		0
 
 #include "../common/gpr.inc"
 #include "../common/spr.inc"
@@ -23,15 +23,21 @@
 #include "../common/stack.inc"
 
 
-#define PANIC(reason)		\
-	mov reason, r3;		\
+#define PANIC(reason)			\
+	mov reason, R_PANIC_REASON;	\
 	call lr0, __panic;
 #define PANIC_DIE	0
 
-#define DEBUGIRQ(reason)		\
-	mov reason, r63;		\
-	mov IRQHI_DEBUG, SPR_MAC_IRQHI;
-#define DEBUG_PANIC	0
+/* Reason codes for the debug-IRQ */
+#define DEBUGIRQ_PANIC		0	/* The firmware panic'ed */
+#define DEBUGIRQ_DUMP_SHM	1	/* Dump shared SHM */
+#define DEBUGIRQ_DUMP_REGS	2	/* Dump the microcode registers */
+#define DEBUGIRQ_ACK		0xFFFF	/* ACK from the kernel */
+
+/* Macro to conveniently trigger a debug-IRQ. Clobbers lr0 and Rz */
+#define DEBUGIRQ_THROW(reason)		\
+	mov reason, R_DEBUGIRQ_REASON;	\
+	call lr0, debug_irq;
 
 #define ret_after_jmp	mov r0, r0 ; ret
 
@@ -84,8 +90,8 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov IRQLO_MAC_SUSPENDED, SPR_MAC_IRQLO
 	orx 0, 15, 0, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: clear Start */
  self:	jnext COND_MACEN, r0, r0, self-
-	mov SHM_UCODESTAT_ACTIVE, [SHM_UCODESTAT]
 
+	mov SHM_UCODESTAT_ACTIVE, [SHM_UCODESTAT]
 	mov 0, SPR_BRC
 	mov 0xFFFF, SPR_BRCL_0
 	mov 0xFFFF, SPR_BRCL_1
@@ -204,13 +210,24 @@ radio_write:
 	POP(SPR_PC0)
 	ret lr0, lr0
 
-/* --- Function: Lowlevel panic helper --- */
+/* --- Function: Lowlevel panic helper --- 
+ * Link Register: Doesn't matter. This won't return anyway.
+ * The Panic reason is passed in R_PANIC_REASON
+ */
 __panic:
-	/* The Panic reason is in r3. We can read that from the kernel. */
-	DEBUGIRQ(DEBUG_PANIC)
+	/* We can read R_PANIC_REASON from the kernel. */
+	DEBUGIRQ_THROW(DEBUGIRQ_PANIC)
  self:	jmp self-
 
-
+/* --- Function: Trigger a debug IRQ ---
+ * Link Register: lr0
+ * The IRQ reason is passed in R_DEBUGIRQ_REASON
+ * This busywaits for the ACK from the kernel.
+ */
+debug_irq:
+	mov IRQHI_DEBUG, SPR_MAC_IRQHI;		/* Trigger the IRQ. */
+wait:	jne R_DEBUGIRQ_REASON, DEBUGIRQ_ACK, wait- /* Wait for kernel to respond. */
+	ret_after_jmp lr0, lr0
 
 #include "../common/stack.asm"
 

@@ -47,6 +47,9 @@
 #define Ry	r62
 #define Rz	r63
 
+#define R_DEBUGIRQ_REASON	Rz
+#define R_PANIC_REASON		r3
+
 #endif /* GENERAL_PURPOSE_REGISTERS_H_ */
 
 // vim: syntax=b43 ts=8
