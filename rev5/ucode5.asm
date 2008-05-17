@@ -24,13 +24,13 @@
 
 
 #define PANIC(reason)		\
-	mov reason, r3		;\
-	call lr0, __panic
+	mov reason, r3;		\
+	call lr0, __panic;
 #define PANIC_DIE	0
 
 #define DEBUGIRQ(reason)		\
-	mov reason, r63			;\
-	mov IRQHI_DEBUG, SPR_MAC_IRQHI
+	mov reason, r63;		\
+	mov IRQHI_DEBUG, SPR_MAC_IRQHI;
 #define DEBUG_PANIC	0
 
 #define ret_after_jmp	mov r0, r0 ; ret
@@ -46,7 +46,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov SHM_UCODESTAT_INIT, [SHM_UCODESTAT]
 	/* SHM and registers are already cleared by the kernel
 	 * Initialize meta information */
-	mov 0x129, [SHM_UCODEREV]	/* We emulate a v4 firmware */
+	mov 352, [SHM_UCODEREV]	/* We emulate a v4 firmware */
 	mov 0, [SHM_UCODEPATCH]
 	/* The "all ones" date is an indication to the driver that we
 	 * are using custom firmware. Note that this date is impossible. ;) */
