@@ -4,7 +4,7 @@
 #include "gpr.inc"
 
 /* The link register used for stack operations.
- * This link register is clobbed on every stack operation. */
+ * This link register is clobbered on every stack operation. */
 #define STACK_LINK_REGISTER	lr3
 
 #define PUSH(value)	mov value, R_STACK_SCRATCH0;	\

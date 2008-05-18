@@ -89,7 +89,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov SHM_UCODESTAT_SUSP, [SHM_UCODESTAT]
 	mov IRQLO_MAC_SUSPENDED, SPR_MAC_IRQLO
 	orx 0, 15, 0, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: clear Start */
- self:	jnext COND_MACEN, r0, r0, self-
+ self:	jnext COND_MACEN, self-
 
 	mov SHM_UCODESTAT_ACTIVE, [SHM_UCODESTAT]
 	mov 0, SPR_BRC
@@ -115,10 +115,10 @@ eventloop_restart:
 
 	// TODO
 
-	jnext COND_MACEN, r0, r0, sleep
+	jnext COND_MACEN, sleep
 
 eventloop_idle:
-	jext COND_PSM(0), r0, r0, eventloop_restart	/* FIXME: What's PSM condition bit 0? */
+	jext COND_PSM(0), eventloop_restart	/* FIXME: What's PSM condition bit 0? */
 	//TODO: if CCA -> restart
 	//TODO: if BG noise measuring -> restart
 	jnzx 0, SHM_HF_MI_TXBTCHECK, [SHM_HF_MI], 0, eventloop_restart
