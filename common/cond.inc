@@ -5,8 +5,17 @@
 
 #define EXTCOND(reg, bit)	((bit) | ((reg) << 4))
 
-/* Wrap a condition in the EOI() wrapper to EOI it */
+
+/* Wrap a condition in the EOI() wrapper to EOI it.
+ * Example:	jext EOI(COND_RADAR), jump_target
+ */
 #define EOI(ext_condition)	((ext_condition) | 0x80)
+/* Use extcond_eoi_only() to EOI a condition without jumping.
+ * Example:	extcond_eoi_only(COND_RADAR)
+ */
+#define extcond_eoi_only(ext_condition)		\
+	jext EOI(ext_condition), __next_insn+;	\
+	__next_insn:;
 
 
 
@@ -28,6 +37,8 @@
 
 /* PHY condition register */
 #define CONDREG_PHY		3
+#define COND_PHY0		EXTCOND(CONDREG_PHY, 0)		/* FIXME: Unknown meaning */
+#define COND_PHY1		EXTCOND(CONDREG_PHY, 1)		/* FIXME: Unknown meaning */
 #define COND_RADAR		EXTCOND(CONDREG_PHY, 2)		/* Radar detected */
 
 /* PSM condition register */

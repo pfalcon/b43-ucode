@@ -23,15 +23,20 @@
 #include "../common/stack.inc"
 
 
+/* Reason codes for PANICs */
+#define PANIC_DIE		0 /* Die and don't let the driver auto-reload us. */
+#define PANIC_RESTART		1 /* The driver will restart the device and firmware. */
+
+/* Macro to conveniently trigger a panic and loop forever. */
 #define PANIC(reason)			\
 	mov reason, R_PANIC_REASON;	\
 	call lr0, __panic;
-#define PANIC_DIE	0
 
 /* Reason codes for the debug-IRQ */
 #define DEBUGIRQ_PANIC		0	/* The firmware panic'ed */
 #define DEBUGIRQ_DUMP_SHM	1	/* Dump shared SHM */
 #define DEBUGIRQ_DUMP_REGS	2	/* Dump the microcode registers */
+#define DEBUGIRQ_MARKER		3	/* Throw a "marker" */
 #define DEBUGIRQ_ACK		0xFFFF	/* ACK from the kernel */
 
 /* Macro to conveniently trigger a debug-IRQ. Clobbers lr0 and Rz */
@@ -39,6 +44,27 @@
 	mov reason, R_DEBUGIRQ_REASON;	\
 	call lr0, debug_irq;
 
+/* A marker can be used to let the kernel driver print a message
+ * telling the user that the firmware just executed the code line the
+ * MARKER statement was put into. The marker can't tell which codefile
+ * it was triggered from (only the line number), but it does have an ID
+ * number that can be used for file identification.
+ * This is only for temporary local debugging,
+ * as it adds a lot of inline code. Do not put this into release code. */
+#define MARKER(id)				\
+	PUSH(SPR_PC0);				\
+	PUSH(R_MARKER_ID);			\
+	PUSH(R_MARKER_LINE);			\
+	mov id , R_MARKER_ID;			\
+	mov __LINE__ , R_MARKER_LINE;		\
+	DEBUGIRQ_THROW(DEBUGIRQ_MARKER);	\
+	POP(R_MARKER_LINE);			\
+	POP(R_MARKER_ID);			\
+	POP(SPR_PC0);
+
+/* RET can't be used right after a jump instruction. Use this, if
+ * you need to return right after a jump.
+ * This will add a no-op before the ret. */
 #define ret_after_jmp	mov r0, r0 ; ret
 
 #define lo16(val)	((val) & 0xFFFF)
@@ -112,7 +138,20 @@ entry_point:	/* ------ ENTRY POINT ------ */
 
 /* -- Restart the event loop -- */
 eventloop_restart:
+	and SPR_PSM_COND, (~0x1), SPR_PSM_COND
+	jnext EOI(COND_RADAR), no_radar_workaround+
+	jzx 0, SHM_HF_LO_RADARW, [SHM_HF_LO], 0, no_radar_workaround+
+	//TODO write SHM radar value to APHY radar thres1
+ no_radar_workaround:
+	extcond_eoi_only(COND_PHY0)
+	extcond_eoi_only(COND_PHY1)
+	jzx 0, 3, SPR_IFS_STAT, 0, no_txstat+
+	//TODO process TXstat
+ no_txstat:
 
+DEBUGIRQ_THROW(DEBUGIRQ_DUMP_REGS)
+MARKER(10)
+PANIC(PANIC_DIE)
 	// TODO
 
 	jnext COND_MACEN, sleep
@@ -170,7 +209,6 @@ phy_write_noflush:
  */
 radio_read:
 	PUSH(SPR_PC0)
-	PUSH(Rb)
 	mov Ra, Rb	/* Rb = radio address */
 	mov 0, Ra
 	jnzx 0, MACCTL_RADIOLOCK, SPR_MAC_CTLHI, 0, out+
@@ -181,7 +219,6 @@ radio_read:
  out:
 	/* The radio register content (or zero, if the
 	 * radio was locked) is in Ra */
-	POP(Rb)
 	POP(SPR_PC0)
 	ret lr0, lr0
 
@@ -189,24 +226,20 @@ radio_read:
  * Link Register: lr0
  * The Radio Address is passed in Ra
  * The Data to write is passed in Rb
- * Ra and Rb are clobbered
  */
 radio_write:
 	PUSH(SPR_PC0)
-	PUSH(Rc)
-	PUSH(Rd)
 	jnzx 0, MACCTL_RADIOLOCK, SPR_MAC_CTLHI, 0, out+
 	mov Ra, Rc	/* Rc = Radio address */
 	mov Rb, Rd	/* Rd = data */
 	mov 0xB, Ra	/* PHY register 0xB */
 	mov Rc, Rb
+	/* Assumption: phy_write_noflush doesn't clobber Rd */
 	call lr0, phy_write_noflush
 	mov 0xD, Ra	/* PHY register 0xD */
 	mov Rd, Rb
 	call lr0, phy_write_noflush
  out:
-	POP(Rd)
-	POP(Rc)
 	POP(SPR_PC0)
 	ret lr0, lr0
 

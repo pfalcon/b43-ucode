@@ -99,19 +99,19 @@
 #define SPR_BRWK_1				spr05d
 #define SPR_BRWK_2				spr05e
 #define SPR_BRWK_3				spr05f
-#define SPR_BASE0				spr060
-#define SPR_BASE1				spr061
-#define SPR_BASE2				spr062
-#define SPR_BASE3				spr063
-#define SPR_BASE4				spr064
-#define SPR_BASE5				spr065
-#define SPR_BASE6				spr066
+#define SPR_BASE0				spr060 /* Offset Register 0 */
+#define SPR_BASE1				spr061 /* Offset Register 1 */
+#define SPR_BASE2				spr062 /* Offset Register 2 */
+#define SPR_BASE3				spr063 /* Offset Register 3 */
+#define SPR_BASE4				spr064 /* Offset Register 4 */
+#define SPR_BASE5				spr065 /* Offset Register 5 */
+#define SPR_BASE6				spr066 /* Offset Register 6 */
 #define SPR_PSM_0x4e				spr067
-#define SPR_PC0					spr068
-#define SPR_PC1					spr069
-#define SPR_PC2					spr06a
-#define SPR_PC3					spr06b
-#define SPR_PSM_0x58				spr06c
+#define SPR_PC0					spr068 /* Link Register 0 */
+#define SPR_PC1					spr069 /* Link Register 1 */
+#define SPR_PC2					spr06a /* Link Register 2 */
+#define SPR_PC3					spr06b /* Link Register 3 */
+#define SPR_PSM_COND				spr06c /* PSM external condition bits */
 #define SPR_PSM_0x5a				spr06d
 #define SPR_PSM_0x5c				spr06e
 #define SPR_PSM_0x5e				spr06f
@@ -331,7 +331,7 @@
 #define SPR_IFS_BKOFFDELAY			spr145
 #define SPR_IFS_0x0c				spr146
 #define SPR_IFS_0x0e				spr147
-#define SPR_IFS_stat				spr148
+#define SPR_IFS_STAT				spr148
 #define SPR_IFS_med_busy_ctl			spr149
 #define SPR_IFS_if_tx_duration			spr14a
 #define SPR_IFS_0x16				spr14b
