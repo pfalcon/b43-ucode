@@ -17,6 +17,7 @@
 
 #include "../common/initvals.inc"
 #include "../common/shm.inc"
+#include "../common/debug.inc"
 
 
 .initvals(b0g0initvals5)
@@ -84,6 +85,8 @@
 	mmio16 0x3B3B, MMIO_TCTL_FIFODEF
 	mmio16 0x8500, MMIO_TCTL_FIFOCMD
 
+	/* Magic stack-end signature used to detect stack overflow. */
+	shm16 MAGIC_STACK_END, HOST_SHM_SHARED, (SHM_STACK_END * 2)
 
 .initvals(b0g0bsinitvals5)
 	/* Interframe space init */

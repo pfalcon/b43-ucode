@@ -16,12 +16,19 @@
 
 #define VERSION		0
 
+#include "../common/debug.inc"
 #include "../common/gpr.inc"
 #include "../common/spr.inc"
 #include "../common/shm.inc"
 #include "../common/phy.inc"
 #include "../common/cond.inc"
 #include "../common/stack.inc"
+
+
+/* Smallest possible frame length; in bytes. */
+#define MIN_IEEE80211_FRAME_LEN	((6 + 2) + 2)
+/* The PLCP header length; in bytes. */
+#define PLCP_HDR_LEN		6
 
 
 /* Reason codes for PANICs */
@@ -171,6 +178,12 @@ eventloop_restart:
 	// TODO
 
 eventloop_idle:
+ #if DEBUG
+	mov MAGIC_STACK_END, Ra
+	je [SHM_STACK_END], Ra, no_stack_corruption+
+	PANIC(PANIC_DIE)
+ no_stack_corruption:
+ #endif
 	jext COND_PSM(0), eventloop_restart	/* FIXME: What's PSM condition bit 0? */
 	//TODO: if CCA -> restart
 	//TODO: if BG noise measuring -> restart
@@ -223,6 +236,30 @@ phy_tx_error:
 
 received_valid_plcp:
 	MARKER(0)
+ wait:	jext EOI(COND_RX_FCS_GOOD), wait-		/* Clear the FCS-good cond from previous frames */
+	jnzx 0, 2, SPR_RXE_0x08, 0, eventloop_idle	/* No packet available */
+ tsf_again:
+	mov SPR_TSF_WORD0, [SHM_RX_TSF0]		/* Read the TSF timestamp for the received frame */
+	mov SPR_TSF_WORD1, [SHM_RX_TSF1]
+	mov SPR_TSF_WORD2, [SHM_RX_TSF2]
+	mov SPR_TSF_WORD3, [SHM_RX_TSF3]
+	jl SPR_TSF_WORD0, [SHM_RX_TSF0], tsf_again-	/* word0 overflow */
+	jzx 0, 0, SPR_TXE0_CTL, 0, txengine_ok+
+	mov 0, SPR_TXE0_CTL				/* Disable the TX engine */
+	and SPR_BRC, (~3), SPR_BRC
+ txengine_ok:
+	//TODO get the channel info and PHYTYPE info and prepare the RX header.
+	or SPR_BRC, 0x140, SPR_BRC
+	orx 0, 9, 1, SPR_BRC, SPR_BRC			/* SPR_BRC |= 0x200 */
+	jext COND_RX_FIFOFULL, rx_fifo_overflow
+	jnzx 0, 15, SPR_RXE_0x1a, 0, rx_not_ready	/* We're not ready, yet. */
+ rx_headerwait:						/* Wait for the header to arrive */
+	jext COND_RX_COMPLETE, rx_complete+
+	jl SPR_RXE_FRAMELEN, (PLCP_HDR_LEN + 32), rx_headerwait-
+ rx_complete:
+	jl SPR_RXE_FRAMELEN, (MIN_IEEE80211_FRAME_LEN + PLCP_HDR_LEN), drop_received_frame
+
+MARKER(0)
 	/* TODO: Wait while the FCS-good condition is asserted. EOI it.
 	 *	If SPR_RXE_0x08 & 0x4 is set, there's nothing to do.
 	 *	The receive time has to be read from the 4 TSF registers.
@@ -234,7 +271,22 @@ received_valid_plcp:
 	 *	Wait for RXcomplete or framelen >= 38 (why 38?).
 	 *	If the framelen < min possible frame len -> drop it.
 	 */
+	jmp eventloop_idle
+
+rx_fifo_overflow:
 	//TODO
+	MARKER(0)
+	PANIC(PANIC_DIE)
+
+rx_not_ready:
+	mov 4, SPR_RXE_0x08
+	mov SPR_RXE_0x08, 0
+	jmp eventloop_idle
+
+drop_received_frame:
+	//TODO
+	MARKER(0)
+	PANIC(PANIC_DIE)
 	jmp eventloop_idle
 
 /* --- Function: Read from a PHY register ---

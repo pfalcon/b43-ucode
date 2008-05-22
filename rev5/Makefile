@@ -3,7 +3,7 @@ PREFIX ?= /lib/firmware/b43-open
 
 all: ucode5.fw
 
-ucode5.fw: ucode5.asm initvals.asm ../common/stack.asm ../common/gpr.inc ../common/spr.inc ../common/shm.inc ../common/cond.inc ../common/stack.inc ../common/phy.inc
+ucode5.fw: ucode5.asm initvals.asm ../common/stack.asm ../common/gpr.inc ../common/spr.inc ../common/shm.inc ../common/cond.inc ../common/stack.inc ../common/phy.inc ../common/debug.inc
 	$(BCMASM) ucode5.asm ucode5.fw --ivalext .fw --psize
 
 install:

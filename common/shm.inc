@@ -3,6 +3,16 @@
 
 /* SHM (Shared Memory) offsets */
 
+/* Host-side routing values for the SHM.
+ * This is only useful for the initvals */
+#define HOST_SHM_UCODE		0
+#define HOST_SHM_SHARED		1
+#define HOST_SHM_SCRATCH	2
+#define HOST_SHM_IHR		3
+#define HOST_SHM_RCMTA		4
+
+
+/* Macro to convert a host-SHM-offset to a microcode-SHM-offset */
 #define SHM(offset)		((offset) / 2)
 
 /* Misc variables */
@@ -139,6 +149,10 @@
 
 
 /* Misc offsets that are only valid for the OpenSource firmware. */
+#define SHM_RX_TSF0		SHM(0xF3C) /* TSF for the received frame (word 0) */
+#define SHM_RX_TSF1		SHM(0xF3E) /* TSF for the received frame (word 1) */
+#define SHM_RX_TSF2		SHM(0xF40) /* TSF for the received frame (word 2) */
+#define SHM_RX_TSF3		SHM(0xF42) /* TSF for the received frame (word 3) */
 #define SHM_RXFRAME_HDR		SHM(0xF44) /* Frame header of received frame is stored here. */
 #define SHM_RXFRAME_HDR_END	SHM(0xF7E) /* Frame header - end */
 #define SHM_RXFRAME_HDR_LEN	(((SHM_RXFRAME_HDR_END - SHM_RXFRAME_HDR) + 1) * 2) /* RXframe header space in bytes */
