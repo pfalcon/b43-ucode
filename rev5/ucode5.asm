@@ -19,6 +19,7 @@
 #include "../common/gpr.inc"
 #include "../common/spr.inc"
 #include "../common/shm.inc"
+#include "../common/phy.inc"
 #include "../common/cond.inc"
 #include "../common/stack.inc"
 
@@ -86,7 +87,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	/* We encode our versioning info in the "time" field. */
 	mov VERSION, [SHM_UCODETIME]
 
-	mov 0x7FF, R_STACK_POINTER
+	mov SHM_STACK_START, R_STACK_POINTER
 
 	/* Initialize the hardware */
 	mov 0, SPR_GPIO_Out			/* Disable any GPIO pin */
@@ -148,13 +149,26 @@ eventloop_restart:
 	jzx 0, 3, SPR_IFS_STAT, 0, no_txstat+
 	//TODO process TXstat
  no_txstat:
+	call lr0, update_gphy_classify_ctl	/* Classify ctrl from SHM to PHY */
+	mov lo16(280000), SPR_TSF_GPT0_VALLO	/* GP Timer 0: Value = 280,000 */
+	mov hi16(280000), SPR_TSF_GPT0_VALHI
+	orx 0, 14, 0x3, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GPT0: Start and ON */
+	jnext COND_MACEN, sleep			/* Driver disabled the MAC? Go to sleep. */
 
-DEBUGIRQ_THROW(DEBUGIRQ_DUMP_REGS)
-MARKER(10)
-PANIC(PANIC_DIE)
+	jnext COND_TX_FLUSH, no_txflush+
+	MARKER(0) /* TODO: handle TX flush request */
+ no_txflush:
+
+	/* Check if there's done real work to be done. */
+	jext EOI(COND_TX_NOW), transmit_frame
+	//TODO Some CTS related stuff
+	jext EOI(COND_TX_UNDERFLOW), handle_tx_underflow
+	jext COND_TX_2, tx_postprocess
+	jext COND_TX_PHYERR, phy_tx_error
+	//TODO more stuff needed
+	jext EOI(COND_RX_PLCP), received_valid_plcp
+
 	// TODO
-
-	jnext COND_MACEN, sleep
 
 eventloop_idle:
 	jext COND_PSM(0), eventloop_restart	/* FIXME: What's PSM condition bit 0? */
@@ -164,6 +178,64 @@ eventloop_idle:
 	mov 0xFFFF, SPR_MAC_MAX_NAP
 	nap						/* .oO( ZzzzZZZzzz..... ) */
 	jmp eventloop_restart
+
+/* --- Function: Set GPHY classify control to OFDM-only
+ * Link Register: lr0
+ */
+gphy_classify_ctl_ofdm:
+	PUSH(SPR_PC0)
+	and [SHM_GCLASSCTL], (~(1 << GPHY_CLASSCTL_CCK)), Rb
+	jmp _write_gclassctl
+
+/* --- Function: Update the GPHY classify control value from SHM.
+ * Link Register: lr0
+ */
+update_gphy_classify_ctl:
+	PUSH(SPR_PC0)
+	mov [SHM_GCLASSCTL], Rb
+ _write_gclassctl: /* jump from gphy_classify_ctl_ofdm() */
+	jne [SHM_PHYTYPE], PHYTYPE_G, out+
+	mov GPHY_CLASSCTL, Ra
+	call lr0, phy_write
+ out:
+	POP(SPR_PC0)
+	ret lr0, lr0
+
+transmit_frame:
+	MARKER(0)
+	//TODO
+	jmp eventloop_idle
+
+handle_tx_underflow:
+	MARKER(0)
+	//TODO
+	jmp eventloop_idle
+
+tx_postprocess:
+	MARKER(0)
+	//TODO
+	jmp eventloop_idle
+
+phy_tx_error:
+	MARKER(0)
+	//TODO
+	jmp eventloop_idle
+
+received_valid_plcp:
+	MARKER(0)
+	/* TODO: Wait while the FCS-good condition is asserted. EOI it.
+	 *	If SPR_RXE_0x08 & 0x4 is set, there's nothing to do.
+	 *	The receive time has to be read from the 4 TSF registers.
+	 *	If TXEctl bit 0x1 is set, clear TXEctl and the lower three bits of PSM_BRC (this seems to disable the TXE)
+	 *	Read the RX header info from PHY reg 8 (channel info). reg << 2 | phytype.
+	 *	OR PSM_BRC with 0x140. OR PSM_BRC with 0x200.
+	 *	Check for RX fifo overflow.
+	 *	if RXE_0x1A & 0x8000, we are not ready. -> Set RXE_0x08=4. Read it back. Idle...
+	 *	Wait for RXcomplete or framelen >= 38 (why 38?).
+	 *	If the framelen < min possible frame len -> drop it.
+	 */
+	//TODO
+	jmp eventloop_idle
 
 /* --- Function: Read from a PHY register ---
  * Link Register: lr0
@@ -263,5 +335,6 @@ wait:	jne R_DEBUGIRQ_REASON, DEBUGIRQ_ACK, wait- /* Wait for kernel to respond. 
 	ret_after_jmp lr0, lr0
 
 #include "../common/stack.asm"
+#include "initvals.asm"
 
 // vim: syntax=b43 ts=8

@@ -24,14 +24,20 @@
 #define COND_RX_FCS_GOOD	EXTCOND(CONDREG_RX, 3)		/* RX FCS good */
 #define COND_RX_COMPLETE	EXTCOND(CONDREG_RX, 6)		/* RX complete */
 #define COND_RX_CRYPTBUSY	EXTCOND(CONDREG_RX, 10)		/* RX crypto engine busy */
-#define COND_RX_FIFOFULL	RXTCOND(CONDREG_RX, 13)		/* RX FIFO full */
+#define COND_RX_FIFOFULL	EXTCOND(CONDREG_RX, 13)		/* RX FIFO full */
+#define COND_RX_PLCP		EXTCOND(CONDREG_RX, 14)		/* We received a valid PLCP header */
 
 /* RXE/MAC match condition register (core rev < 5) */
 #define CONDREG_RXE		1
 
 /* TX condition register */
 #define CONDREG_TX		2
+#define COND_TX_NOW		EXTCOND(CONDREG_TX, 0)		/* TX should be done now */
+#define COND_TX_1		EXTCOND(CONDREG_TX, 1)		/* FIXME: Unknown meaning */
+#define COND_TX_2		EXTCOND(CONDREG_TX, 2)		/* FIXME: Unknown meaning */
 #define COND_MACEN		EXTCOND(CONDREG_TX, 4)		/* MAC enabled */
+#define COND_TX_UNDERFLOW	EXTCOND(CONDREG_TX, 11)		/* TX underflow */
+#define COND_TX_PHYERR		EXTCOND(CONDREG_TX, 13)		/* Check for PHY TX errors needed */
 #define COND_TX_FLUSH		EXTCOND(CONDREG_TX, 14)		/* TX flush requested */
 #define COND_TX_BUSY		EXTCOND(CONDREG_TX, 15)		/* TX engine busy */
 
@@ -40,6 +46,10 @@
 #define COND_PHY0		EXTCOND(CONDREG_PHY, 0)		/* FIXME: Unknown meaning */
 #define COND_PHY1		EXTCOND(CONDREG_PHY, 1)		/* FIXME: Unknown meaning */
 #define COND_RADAR		EXTCOND(CONDREG_PHY, 2)		/* Radar detected */
+
+/* Unknown condition register */
+#define CONDREG_4		4
+
 
 /* PSM condition register */
 #define CONDREG_PSM		5

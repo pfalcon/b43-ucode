@@ -55,6 +55,7 @@
 #define SHM_PHYTXNOI		SHM(0x06E) /* PHY noise directly after TX (lower 8bit only) */
 #define SHM_RFRXSP1		SHM(0x072) /* RF RX SP Register 1 */
 #define SHM_CHAN		SHM(0x0A0) /* Current channel (low 8bit only) */
+#define SHM_GCLASSCTL		SHM(0x0A6) /* Value for the G-PHY classify control register */
 #define SHM_BCMCFIFOID		SHM(0x108) /* Last posted cookie to the bcast/mcast FIFO */
 
 /* TSSI information */
@@ -135,6 +136,14 @@
 #define SHM_MAXBFRAMES		SHM(0x080) /* Maximum number of frames in a burst */
 #define SHM_SPUWKUP		SHM(0x094) /* pre-wakeup for synth PU in us */
 #define SHM_PRETBTT		SHM(0x096) /* pre-TBTT in us */
+
+
+/* Misc offsets that are only valid for the OpenSource firmware. */
+#define SHM_RXFRAME_HDR		SHM(0xF44) /* Frame header of received frame is stored here. */
+#define SHM_RXFRAME_HDR_END	SHM(0xF7E) /* Frame header - end */
+#define SHM_RXFRAME_HDR_LEN	(((SHM_RXFRAME_HDR_END - SHM_RXFRAME_HDR) + 1) * 2) /* RXframe header space in bytes */
+#define SHM_STACK_END		SHM(0xF80) /* Last element of stack. Stacksize is 128 bytes */
+#define SHM_STACK_START		SHM(0xFFE) /* Stack grows down from end of memory */
 
 #endif /* SHARED_MEMORY_H_ */
 
