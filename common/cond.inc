@@ -50,7 +50,8 @@
 
 /* Unknown condition register */
 #define CONDREG_4		4
-
+#define CONDREG_4_C1		EXTCOND(CONDREG_4, 1)		/* FIXME: Unknown meaning */
+#define CONDREG_4_C9		EXTCOND(CONDREG_4, 9)		/* FIXME: Unknown meaning */
 
 /* PSM condition register */
 #define CONDREG_PSM		5

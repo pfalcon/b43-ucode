@@ -6,8 +6,9 @@
 #define SPR_RXE_0x00				spr000
 #define SPR_RXE_Copy_Offset			spr001
 #define SPR_RXE_Copy_Length			spr002
-#define SPR_Receive_FIFO_Control		spr003
-#define SPR_RXE_0x08				spr004
+#define SPR_RXE_FIFOCTL0			spr003
+#define SPR_RXE_FIFOCTL1			spr004
+#define  SPR_RXE_FIFOCTL1_STARTCOPY		0 /* bit0: Start copying the data into the FIFO */
 #define SPR_Received_Frame_Count		spr005
 #define SPR_RXE_0x0c				spr006
 #define SPR_RXE_RXHDR_OFFSET			spr007

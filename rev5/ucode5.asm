@@ -67,12 +67,15 @@
 	PUSH(SPR_PC0);				\
 	PUSH(R_MARKER_ID);			\
 	PUSH(R_MARKER_LINE);			\
+	PUSH(R_DEBUGIRQ_REASON);		\
 	mov id , R_MARKER_ID;			\
 	mov __LINE__ , R_MARKER_LINE;		\
 	DEBUGIRQ_THROW(DEBUGIRQ_MARKER);	\
+	POP(R_DEBUGIRQ_REASON);			\
 	POP(R_MARKER_LINE);			\
 	POP(R_MARKER_ID);			\
-	POP(SPR_PC0);
+	POP(SPR_PC0);				\
+	mov SPR_PC0, 0;
 
 /* RET can't be used right after a jump instruction. Use this, if
  * you need to return right after a jump.
@@ -135,8 +138,8 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov 0xFFFF, SPR_BRCL_1
 	mov 0xFFFF, SPR_BRCL_2
 	mov 0xFFFF, SPR_BRCL_3
-	or SPR_RXE_0x08, 0x0004, SPR_RXE_0x08
- self:	jnzx 0, 2, SPR_RXE_0x08, 0, self-	/* Wait for 0x4 to clear */
+	or SPR_RXE_FIFOCTL1, 0x0004, SPR_RXE_FIFOCTL1
+ self:	jnzx 0, 2, SPR_RXE_FIFOCTL1, 0, self-	/* Wait for 0x4 to clear */
 	orx 0, 15, 1, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: Start */
 	mov 0, SPR_BRCL_0
 	mov 0, SPR_BRCL_1
@@ -182,6 +185,7 @@ eventloop_restart:
 	// TODO
 
 eventloop_idle:
+	mov 0, R_WATCHDOG
  #if DEBUG
 	mov MAGIC_STACK_END, Ra
 	je [SHM_STACK_END], Ra, no_stack_corruption+
@@ -245,7 +249,7 @@ phy_tx_error:
 /* --- Handler: We received a PLCP */
 received_valid_plcp:
  wait:	jext EOI(COND_RX_FCS_GOOD), wait-		/* Clear the FCS-good cond from previous frames */
-	jnzx 0, 2, SPR_RXE_0x08, 0, eventloop_idle	/* No packet available */
+	jnzx 0, 2, SPR_RXE_FIFOCTL1, 0, eventloop_idle	/* No packet available */
  tsf_again:
 	mov SPR_TSF_WORD0, [SHM_RX_TSF0]		/* Read the TSF timestamp for the received frame */
 	mov SPR_TSF_WORD1, [SHM_RX_TSF1]
@@ -267,7 +271,7 @@ received_valid_plcp:
 	jl SPR_RXE_FRAMELEN, (MIN_IEEE80211_FRAME_LEN + PLCP_HDR_LEN), drop_received_frame
 
 	mov 0x8300, SPR_WEP_CTL				/* Disable crypto */
-	or SPR_RXE_0x08, 0x2, SPR_RXE_0x08
+	or SPR_RXE_FIFOCTL1, 0x2, SPR_RXE_FIFOCTL1
 	and SPR_BRC, (~0x40), SPR_BRC
 
 	/* Wait for the frame receive to complete. */
@@ -292,23 +296,34 @@ received_valid_plcp:
 	call lr0, put_rx_frame_into_fifo
 	jne Ra, 0, rx_fifo_overflow
 
-	and SPR_RXE_0x08, (~2), SPR_RXE_0x08
+	and SPR_RXE_FIFOCTL1, (~2), SPR_RXE_FIFOCTL1
+//MARKER(11)
 
 	jmp eventloop_idle
 
-rx_fifo_overflow:
-	//TODO
-	MARKER(0)
-	PANIC(PANIC_DIE)
-
 rx_not_ready:
-	mov 4, SPR_RXE_0x08
-	mov SPR_RXE_0x08, 0
+	mov 0x4, SPR_RXE_FIFOCTL1
+	mov SPR_RXE_FIFOCTL1, 0
 	jmp eventloop_idle
 
 drop_received_frame:
-	or SPR_RXE_0x08, 0x2, SPR_RXE_0x08
+	or SPR_RXE_FIFOCTL1, 0x2, SPR_RXE_FIFOCTL1
 	jmp eventloop_idle
+
+/* --- Handler: For RX-FIFO-full conditions */
+rx_fifo_overflow:
+	/* TODO: If CONDREG_4 bit6 is set, we must push the frame to the host nevertheless. Why? */
+	extcond_eoi_only(COND_RX_FIFOFULL)
+	orx 0, 9, 1, SPR_BRC, SPR_BRC		/* Set 0x200 */
+
+	/* fallthrough... */
+
+/* --- Handler: Discard the received frame */
+discard_rx_frame:
+	or SPR_RXE_FIFOCTL1, 0x14, SPR_RXE_FIFOCTL1
+	mov SPR_RXE_FIFOCTL1, 0				/* commit */
+	/* TODO: Check if there's something to transmit */
+	jmp eventloop_restart
 
 /* --- Function: Put the received frame into the FIFO ---
  * This will also take the RX-header from SHM and put it in
@@ -319,7 +334,11 @@ drop_received_frame:
  *   Ra == 1 -> Fifo overflow
  */
 put_rx_frame_into_fifo:
-	xor SPR_RXE_0x08, 1, SPR_RXE_0x08		/* Flip bit 0. Will start FIFO operation */
+	/* Start FIFO operation now. */
+//	orx 1, 0, 1, SPR_RXE_FIFOCTL1, SPR_RXE_FIFOCTL1
+//	or SPR_RXE_FIFOCTL1, (1 << SPR_RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
+	xor SPR_RXE_FIFOCTL1, (1 << SPR_RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
+/* FIXME: we sometimes loop forever here. */
  wait_fifo_start:					/* Wait until FIFO starts operating */
 	jext COND_RX_FIFOFULL, overflow+
 	jnext COND_RX_FIFOBUSY, wait_fifo_start-

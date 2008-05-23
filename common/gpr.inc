@@ -14,6 +14,8 @@
 #define R_SHORT_FB		r23
 #define R_LONG_FB		r24
 
+#define R_WATCHDOG		r1
+
 /* Registers used by the stack implementation only. */
 #define R_STACK_POINTER		r35
 #define R_STACK_SCRATCH0	r36
