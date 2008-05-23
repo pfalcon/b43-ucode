@@ -148,12 +148,30 @@
 #define SHM_PRETBTT		SHM(0x096) /* pre-TBTT in us */
 
 
-/* Misc offsets that are only valid for the OpenSource firmware. */
+
+
+/* --- Misc offsets that are only valid for the OpenSource firmware. --- */
+
+/* RX-header for the driver.
+ * The RXE will take it from here and put it into the DMA FIFO. */
+#define SHM_RXHDR		SHM(0xF28) /* Address where the RXE will take the RXHDR from */
+#define  SHM_RXHDR_FRAMELEN	SHM(0xF28) /* Frame length in bytes, not including RX-header */
+#define  SHM_RXHDR_PAD		SHM(0xF2A) /* Unused */
+#define  SHM_RXHDR_PHYSTAT0	SHM(0xF2C) /* PHY RX Status 0 */
+#define  SHM_RXHDR_PHYSTAT1	SHM(0xF2E) /* PHY RX Status 1 */
+#define  SHM_RXHDR_PHYSTAT2	SHM(0xF30) /* PHY RX Status 2 */
+#define  SHM_RXHDR_PHYSTAT3	SHM(0xF32) /* PHY RX Status 3 */
+#define  SHM_RXHDR_MACSTAT0	SHM(0xF34) /* MAC RX Status low */
+#define  SHM_RXHDR_MACSTAT1	SHM(0xF36) /* MAC RX Status high */
+#define  SHM_RXHDR_TIME		SHM(0xF38) /* MAC time + PHY delay */
+#define  SHM_RXHDR_CHAN		SHM(0xF3A) /* RX Channel information */
+#define  SHM_RXHDR_SIZE		10 /* Header size in words */
+
 #define SHM_RX_TSF0		SHM(0xF3C) /* TSF for the received frame (word 0) */
 #define SHM_RX_TSF1		SHM(0xF3E) /* TSF for the received frame (word 1) */
 #define SHM_RX_TSF2		SHM(0xF40) /* TSF for the received frame (word 2) */
 #define SHM_RX_TSF3		SHM(0xF42) /* TSF for the received frame (word 3) */
-#define SHM_RXFRAME_HDR		SHM(0xF44) /* Frame header of received frame is stored here. */
+#define SHM_RXFRAME_HDR		SHM(0xF44) /* ieee80211 Frame header of received frame is stored here. */
 #define SHM_RXFRAME_HDR_END	SHM(0xF7E) /* Frame header - end */
 #define SHM_RXFRAME_HDR_LEN	(((SHM_RXFRAME_HDR_END - SHM_RXFRAME_HDR) + 1) * 2) /* RXframe header space in bytes */
 #define SHM_STACK_END		SHM(0xF80) /* Last element of stack. Stacksize is 128 bytes */

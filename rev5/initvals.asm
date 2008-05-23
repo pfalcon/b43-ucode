@@ -88,6 +88,12 @@
 	/* Magic stack-end signature used to detect stack overflow. */
 	shm16 MAGIC_STACK_END, HOST_SHM_SHARED, (SHM_STACK_END * 2)
 
+	/* Receive header setup */
+	mmio16 SHM_RXHDR, MMIO_RXE_RXHDR_OFFSET		/* Offset in SHM words */
+	mmio16 SHM_RXHDR_SIZE, MMIO_RXE_RXHDR_LEN	/* Length in SHM words */
+	shm16 0, HOST_SHM_SHARED, (SHM_RXHDR_PAD * 2)	/* Unused padding field */
+
+
 .initvals(b0g0bsinitvals5)
 	/* Interframe space init */
 	mmio16 0x0B4E, 0x686

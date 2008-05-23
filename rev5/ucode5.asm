@@ -25,8 +25,12 @@
 #include "../common/stack.inc"
 
 
+/* Frame Check Sequence length; in bytes */
+#define FCS_LEN			4
 /* Smallest possible frame length; in bytes. */
-#define MIN_IEEE80211_FRAME_LEN	((6 + 2) + 2)
+#define MIN_IEEE80211_FRAME_LEN	(((6 + 2) + 2) + FCS_LEN)
+/* Maximum possible frame length; in bytes. */
+#define MAX_IEEE80211_FRAME_LEN	(2352 + FCS_LEN)
 /* The PLCP header length; in bytes. */
 #define PLCP_HDR_LEN		6
 
@@ -166,7 +170,7 @@ eventloop_restart:
 	MARKER(0) /* TODO: handle TX flush request */
  no_txflush:
 
-	/* Check if there's done real work to be done. */
+	/* Check if there's some real work to be done. */
 	jext EOI(COND_TX_NOW), transmit_frame
 	//TODO Some CTS related stuff
 	jext EOI(COND_TX_UNDERFLOW), handle_tx_underflow
@@ -214,28 +218,32 @@ update_gphy_classify_ctl:
 	POP(SPR_PC0)
 	ret lr0, lr0
 
+/* --- Handler: Transmit another frame --- */
 transmit_frame:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
+/* --- Handler: TX data underflow --- */
 handle_tx_underflow:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
+/* --- Handler: Do some post-TX processing --- */
 tx_postprocess:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
+/* --- Handler: The PHY threw an error --- */
 phy_tx_error:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
+/* --- Handler: We received a PLCP */
 received_valid_plcp:
-	MARKER(0)
  wait:	jext EOI(COND_RX_FCS_GOOD), wait-		/* Clear the FCS-good cond from previous frames */
 	jnzx 0, 2, SPR_RXE_0x08, 0, eventloop_idle	/* No packet available */
  tsf_again:
@@ -248,7 +256,6 @@ received_valid_plcp:
 	mov 0, SPR_TXE0_CTL				/* Disable the TX engine */
 	and SPR_BRC, (~3), SPR_BRC
  txengine_ok:
-	//TODO get the channel info and PHYTYPE info and prepare the RX header.
 	or SPR_BRC, 0x140, SPR_BRC
 	orx 0, 9, 1, SPR_BRC, SPR_BRC			/* SPR_BRC |= 0x200 */
 	jext COND_RX_FIFOFULL, rx_fifo_overflow
@@ -259,18 +266,34 @@ received_valid_plcp:
  rx_complete:
 	jl SPR_RXE_FRAMELEN, (MIN_IEEE80211_FRAME_LEN + PLCP_HDR_LEN), drop_received_frame
 
-MARKER(0)
-	/* TODO: Wait while the FCS-good condition is asserted. EOI it.
-	 *	If SPR_RXE_0x08 & 0x4 is set, there's nothing to do.
-	 *	The receive time has to be read from the 4 TSF registers.
-	 *	If TXEctl bit 0x1 is set, clear TXEctl and the lower three bits of PSM_BRC (this seems to disable the TXE)
-	 *	Read the RX header info from PHY reg 8 (channel info). reg << 2 | phytype.
-	 *	OR PSM_BRC with 0x140. OR PSM_BRC with 0x200.
-	 *	Check for RX fifo overflow.
-	 *	if RXE_0x1A & 0x8000, we are not ready. -> Set RXE_0x08=4. Read it back. Idle...
-	 *	Wait for RXcomplete or framelen >= 38 (why 38?).
-	 *	If the framelen < min possible frame len -> drop it.
-	 */
+	mov 0x8300, SPR_WEP_CTL				/* Disable crypto */
+	or SPR_RXE_0x08, 0x2, SPR_RXE_0x08
+	and SPR_BRC, (~0x40), SPR_BRC
+
+	/* Wait for the frame receive to complete. */
+ wait:	jnext COND_RX_COMPLETE, wait-
+ wait:	jzx 0, 14, SPR_RXE_0x1a, 0, wait-
+	/* If the received frame is too big, we drop it. */
+	mov (MAX_IEEE80211_FRAME_LEN + PLCP_HDR_LEN), Ra
+	jg SPR_RXE_FRAMELEN, Ra, drop_received_frame
+
+	/* RX header setup */
+	mov SPR_RXE_FRAMELEN, [SHM_RXHDR_FRAMELEN]
+	mov SPR_RXE_PHYRXSTAT0, [SHM_RXHDR_PHYSTAT0]
+	mov SPR_RXE_PHYRXSTAT1, [SHM_RXHDR_PHYSTAT1]
+	mov SPR_RXE_PHYRXSTAT2, [SHM_RXHDR_PHYSTAT2]
+	mov SPR_RXE_PHYRXSTAT3, [SHM_RXHDR_PHYSTAT3]
+	mov [SHM_RX_TSF0], [SHM_RXHDR_TIME]
+	mov 0x008, Ra
+	call lr0, phy_read
+	sl Ra, 2, Ra
+	or Ra, [SHM_PHYTYPE], [SHM_RXHDR_CHAN]
+
+	call lr0, put_rx_frame_into_fifo
+	jne Ra, 0, rx_fifo_overflow
+
+	and SPR_RXE_0x08, (~2), SPR_RXE_0x08
+
 	jmp eventloop_idle
 
 rx_fifo_overflow:
@@ -284,10 +307,35 @@ rx_not_ready:
 	jmp eventloop_idle
 
 drop_received_frame:
-	//TODO
-	MARKER(0)
-	PANIC(PANIC_DIE)
+	or SPR_RXE_0x08, 0x2, SPR_RXE_0x08
 	jmp eventloop_idle
+
+/* --- Function: Put the received frame into the FIFO ---
+ * This will also take the RX-header from SHM and put it in
+ * front of the packet.
+ * Link Register: lr0
+ * The result is returned in Ra:
+ *   Ra == 0 -> OK
+ *   Ra == 1 -> Fifo overflow
+ */
+put_rx_frame_into_fifo:
+	xor SPR_RXE_0x08, 1, SPR_RXE_0x08		/* Flip bit 0. Will start FIFO operation */
+ wait_fifo_start:					/* Wait until FIFO starts operating */
+	jext COND_RX_FIFOFULL, overflow+
+	jnext COND_RX_FIFOBUSY, wait_fifo_start-
+ wait_fifo_finish:					/* Wait for FIFO to finish operation */
+	jext COND_RX_FIFOFULL, overflow+
+	jext COND_RX_FIFOBUSY, wait_fifo_finish-
+	mov r0, r0					/* Flush the pipelines */
+	je 0, 0, next+					/* Flush the pipelines */
+ next:
+	jext COND_RX_FIFOFULL, overflow+
+	mov 0, Ra					/* return code 0 */
+ out:
+	ret lr0, lr0
+ overflow:
+	mov 1, Ra
+	jmp out-
 
 /* --- Function: Read from a PHY register ---
  * Link Register: lr0

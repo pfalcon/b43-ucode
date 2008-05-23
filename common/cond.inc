@@ -24,6 +24,7 @@
 #define COND_RX_FCS_GOOD	EXTCOND(CONDREG_RX, 3)		/* RX FCS good */
 #define COND_RX_COMPLETE	EXTCOND(CONDREG_RX, 6)		/* RX complete */
 #define COND_RX_CRYPTBUSY	EXTCOND(CONDREG_RX, 10)		/* RX crypto engine busy */
+#define COND_RX_FIFOBUSY	EXTCOND(CONDREG_RX, 11)		/* RX FIFO operating */
 #define COND_RX_FIFOFULL	EXTCOND(CONDREG_RX, 13)		/* RX FIFO full */
 #define COND_RX_PLCP		EXTCOND(CONDREG_RX, 14)		/* We received a valid PLCP header */
 

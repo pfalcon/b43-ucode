@@ -12,8 +12,8 @@
 #define SPR_RXE_0x0c				spr006
 #define SPR_RXE_RXHDR_OFFSET			spr007
 #define SPR_RXE_RXHDR_LEN			spr008
-#define SPR_RXE_PHYRS_0				spr009
-#define SPR_RXE_PHYRS_1				spr00a
+#define SPR_RXE_PHYRXSTAT0			spr009
+#define SPR_RXE_PHYRXSTAT1			spr00a
 #define SPR_RXE_0x16				spr00b
 #define SPR_RXE_FRAMELEN			spr00c
 #define SPR_RXE_0x1a				spr00d
@@ -29,8 +29,8 @@
 #define SPR_RXE_0x2e				spr017
 #define SPR_Ext_IHR_Address			spr018
 #define SPR_Ext_IHR_Data			spr019
-#define SPR_RXE_PHYRS_2				spr01a
-#define SPR_RXE_PHYRS_3				spr01b
+#define SPR_RXE_PHYRXSTAT2			spr01a
+#define SPR_RXE_PHYRXSTAT3			spr01b
 #define SPR_PHY_Mode				spr01c
 #define SPR_RCM_TA_Control			spr01d
 #define SPR_RCM_TA_Size				spr01e
@@ -483,7 +483,7 @@
 #define SPR_WEP_0x3a				spr1dd
 #define SPR_WEP_0x3c				spr1de
 #define SPR_WEP_0x3e				spr1df
-#define SPR_WEP_Control				spr1e0
+#define SPR_WEP_CTL				spr1e0
 #define SPR_WEP_IV_Location			spr1e1
 #define SPR_WEP_IV_Key				spr1e2
 #define SPR_WEP_WKey				spr1e3

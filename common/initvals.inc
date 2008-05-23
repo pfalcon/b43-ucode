@@ -87,6 +87,8 @@
 #define MMIO_RXE_RXMEM			0x402
 #define MMIO_RXE_RXCOPYLEN		0x404
 #define MMIO_RXE_FIFOCTL		0x406
+#define MMIO_RXE_RXHDR_OFFSET		0x40E /* in words */
+#define MMIO_RXE_RXHDR_LEN		0x410 /* in words */
 
 #define MMIO_MACFILTER_CONTROL		0x420
 #define MMIO_MACFILTER_DATA		0x422
