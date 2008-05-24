@@ -32,6 +32,7 @@
  * eventloop context. They are _not_ called and also _not_ jumped to
  * from a function. Handlers don't need to save registers, except
  * if it needs caller-save registers before and after a subfunction call.
+ * Handlers are prefixed with h_
  *
  *	FUNCTIONS:
  * Functions are called. Usually with link register 0.
@@ -147,15 +148,15 @@ eventloop_restart:
  no_txflush:
 
 	/* Check if there's some real work to be done. */
-	jext EOI(COND_TX_NOW), transmit_frame
+	jext EOI(COND_TX_NOW), h_transmit_frame
 	//TODO Some CTS related stuff
-	jext EOI(COND_TX_UNDERFLOW), handle_tx_underflow
-	jext COND_TX_2, tx_postprocess
-	jext COND_TX_PHYERR, phy_tx_error
+	jext EOI(COND_TX_UNDERFLOW), h_tx_underflow
+	jext COND_TX_2, h_tx_postprocess
+	jext COND_TX_PHYERR, h_phy_tx_error
 	//TODO more stuff needed
-	jext EOI(COND_RX_PLCP), received_valid_plcp
-	jext COND_RX_COMPLETE, rx_complete_handler
-	jext EOI(COND_RX_BADPLCP), received_bad_plcp
+	jext EOI(COND_RX_PLCP), h_received_valid_plcp
+	jext COND_RX_COMPLETE, h_rx_complete_handler
+	jext EOI(COND_RX_BADPLCP), h_received_bad_plcp
 
 	// TODO
 
@@ -198,31 +199,31 @@ update_gphy_classify_ctl:
 	ret lr0, lr0
 
 /* --- Handler: Transmit another frame --- */
-transmit_frame:
+h_transmit_frame:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
 /* --- Handler: TX data underflow --- */
-handle_tx_underflow:
+h_tx_underflow:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
 /* --- Handler: Do some post-TX processing --- */
-tx_postprocess:
+h_tx_postprocess:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
 /* --- Handler: The PHY threw an error --- */
-phy_tx_error:
+h_phy_tx_error:
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
 /* --- Handler: We received a PLCP */
-received_valid_plcp:
+h_received_valid_plcp:
  wait:	jext EOI(COND_RX_FCS_GOOD), wait-		/* Clear the FCS-good cond from previous frames */
 	jnzx 0, 2, SPR_RXE_FIFOCTL1, 0, eventloop_idle	/* No packet available */
  tsf_again:
@@ -237,7 +238,7 @@ received_valid_plcp:
  txengine_ok:
 	or SPR_BRC, 0x140, SPR_BRC
 	orx 0, 9, 1, SPR_BRC, SPR_BRC			/* SPR_BRC |= 0x200 */
-	jext COND_RX_FIFOFULL, rx_fifo_overflow
+	jext COND_RX_FIFOFULL, h_rx_fifo_overflow
 	jnzx 0, 15, SPR_RXE_0x1a, 0, rx_not_ready	/* We're not ready, yet. */
  rx_headerwait:						/* Wait for the header to arrive */
 	jext COND_RX_COMPLETE, rx_complete+
@@ -269,7 +270,7 @@ received_valid_plcp:
 	or Ra, [SHM_PHYTYPE], [SHM_RXHDR_CHAN]
 
 	call lr0, put_rx_frame_into_fifo
-	jne Ra, 0, rx_fifo_overflow
+	jne Ra, 0, h_rx_fifo_overflow
 
 	and SPR_RXE_FIFOCTL1, (~2), SPR_RXE_FIFOCTL1
 //MARKER(11)
@@ -286,17 +287,17 @@ drop_received_frame:
 	jmp eventloop_idle
 
 /* --- Handler: We received a PLCP (corrupt checksum) */
-received_bad_plcp:
+h_received_bad_plcp:
  wait:
 	jnzx 0, 11, SPR_RXE_0x1a, 0, eventloop_idle	/* Wasn't a PLCP */
 	jnzx 0, 12, SPR_RXE_0x1a, 0, wait-		/* Wait for the RX to complete */
 	//TODO: If we want to keep bad plcp frames, push it to host
-	jext COND_RX_FIFOFULL, rx_fifo_overflow
-	jnzx 0, 15, SPR_RXE_0x1a, 0, rx_fifo_overflow
-	jmp rxe_reset
+	jext COND_RX_FIFOFULL, h_rx_fifo_overflow
+	jnzx 0, 15, SPR_RXE_0x1a, 0, h_rx_fifo_overflow
+	jmp h_rxe_reset
 
 /* --- Handler: For RX-FIFO-full conditions */
-rx_fifo_overflow:
+h_rx_fifo_overflow:
 	/* TODO: If CONDREG_4 bit6 is set, we must push the frame to the host nevertheless. Why? */
 	extcond_eoi_only(COND_RX_FIFOFULL)
 	orx 0, 9, 1, SPR_BRC, SPR_BRC		/* Set 0x200 */
@@ -304,21 +305,21 @@ rx_fifo_overflow:
 	/* fallthrough... */
 
 /* --- Handler: Discard the received frame */
-discard_rx_frame:
+h_discard_rx_frame:
 	or SPR_RXE_FIFOCTL1, 0x14, SPR_RXE_FIFOCTL1
 	mov SPR_RXE_FIFOCTL1, 0				/* commit */
 	/* TODO: Check if there's something to transmit */
 	jmp eventloop_restart
 
 /* --- Handler: RX of a frame is complete. Reset RXE. */
-rx_complete_handler:
+h_rx_complete_handler:
 //	jext COND_4_C6, TODO Push frame to host
 	extcond_eoi_only(COND_RX_COMPLETE)
 
 	/* fallthrough... */
 
 /* --- Handler: RXE reset. Reset the RX engine. */
-rxe_reset:
+h_rxe_reset:
 	mov 0x4, SPR_RXE_FIFOCTL1
 	mov SPR_RXE_FIFOCTL1, 0			/* commit */
 	jmp eventloop_idle
