@@ -8,7 +8,7 @@
 #define SPR_RXE_Copy_Length			spr002
 #define SPR_RXE_FIFOCTL0			spr003
 #define SPR_RXE_FIFOCTL1			spr004
-#define  SPR_RXE_FIFOCTL1_STARTCOPY		0 /* bit0: Start copying the data into the FIFO */
+#define  RXE_FIFOCTL1_STARTCOPY			0 /* bit0: Start copying the data into the FIFO */
 #define SPR_Received_Frame_Count		spr005
 #define SPR_RXE_0x0c				spr006
 #define SPR_RXE_RXHDR_OFFSET			spr007
@@ -18,6 +18,7 @@
 #define SPR_RXE_0x16				spr00b
 #define SPR_RXE_FRAMELEN			spr00c
 #define SPR_RXE_0x1a				spr00d
+#define  RXE_0x1a_OVERFLOW			15 /* bit15: Indicate FIFO overflow */
 #define SPR_RXE_0x1c				spr00e
 #define SPR_RXE_0x1e				spr00f
 #define SPR_RCM_Control				spr010
@@ -84,22 +85,22 @@
 #define SPR_GPIO_In				spr04d
 #define SPR_GPIO_Out				spr04e
 #define SPR_GPIO_Output_Enable			spr04f
-#define SPR_BRED_0				spr050
-#define SPR_BRED_1				spr051
-#define SPR_BRED_2				spr052
-#define SPR_BRED_3				spr053
-#define SPR_BRCL_0				spr054
-#define SPR_BRCL_1				spr055
-#define SPR_BRCL_2				spr056
-#define SPR_BRCL_3				spr057
-#define SPR_BRPO_0				spr058
-#define SPR_BRPO_1				spr059
-#define SPR_BRPO_2				spr05a
-#define SPR_BRPO_3				spr05b
-#define SPR_BRWK_0				spr05c
-#define SPR_BRWK_1				spr05d
-#define SPR_BRWK_2				spr05e
-#define SPR_BRWK_3				spr05f
+#define SPR_BRED0				spr050
+#define SPR_BRED1				spr051
+#define SPR_BRED2				spr052
+#define SPR_BRED3				spr053
+#define SPR_BRCL0				spr054
+#define SPR_BRCL1				spr055
+#define SPR_BRCL2				spr056
+#define SPR_BRCL3				spr057
+#define SPR_BRPO0				spr058
+#define SPR_BRPO1				spr059
+#define SPR_BRPO2				spr05a
+#define SPR_BRPO3				spr05b
+#define SPR_BRWK0				spr05c
+#define SPR_BRWK1				spr05d
+#define SPR_BRWK2				spr05e
+#define SPR_BRWK3				spr05f
 #define SPR_BASE0				spr060 /* Offset Register 0 */
 #define SPR_BASE1				spr061 /* Offset Register 1 */
 #define SPR_BASE2				spr062 /* Offset Register 2 */

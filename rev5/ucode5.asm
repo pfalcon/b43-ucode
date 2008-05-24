@@ -108,22 +108,22 @@ entry_point:	/* ------ ENTRY POINT ------ */
 
 	mov SHM_UCODESTAT_ACTIVE, [SHM_UCODESTAT]
 	mov 0, SPR_BRC
-	mov 0xFFFF, SPR_BRCL_0
-	mov 0xFFFF, SPR_BRCL_1
-	mov 0xFFFF, SPR_BRCL_2
-	mov 0xFFFF, SPR_BRCL_3
+	mov 0xFFFF, SPR_BRCL0
+	mov 0xFFFF, SPR_BRCL1
+	mov 0xFFFF, SPR_BRCL2
+	mov 0xFFFF, SPR_BRCL3
 	or SPR_RXE_FIFOCTL1, 0x0004, SPR_RXE_FIFOCTL1
  self:	jnzx 0, 2, SPR_RXE_FIFOCTL1, 0, self-	/* Wait for 0x4 to clear */
 	orx 0, 15, 1, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: Start */
-	mov 0, SPR_BRCL_0
-	mov 0, SPR_BRCL_1
-	mov 0, SPR_BRCL_2
-	mov 0, SPR_BRCL_3
+	mov 0, SPR_BRCL0
+	mov 0, SPR_BRCL1
+	mov 0, SPR_BRCL2
+	mov 0, SPR_BRCL3
 	/* TODO: setup TX status and PMQ discarding (MACCTL hi) */
-	mov 0x7360, SPR_BRWK_0
-	mov 0x0000, SPR_BRWK_1
-	mov 0x730F, SPR_BRWK_2
-	mov 0x0057, SPR_BRWK_3
+	mov 0x7360, SPR_BRWK0
+	mov 0x0000, SPR_BRWK1
+	mov 0x730F, SPR_BRWK2
+	mov 0x0057, SPR_BRWK3
 
 /* -- Restart the event loop -- */
 eventloop_restart:
@@ -149,16 +149,25 @@ eventloop_restart:
 
 	/* Check if there's some real work to be done. */
 	jext EOI(COND_TX_NOW), h_transmit_frame
-	//TODO Some CTS related stuff
+	jext EOI(COND_TX_POWER), h_tx_power_updates
 	jext EOI(COND_TX_UNDERFLOW), h_tx_underflow
 	jext COND_TX_2, h_tx_postprocess
 	jext COND_TX_PHYERR, h_phy_tx_error
-	//TODO more stuff needed
+	jnzx 3, 1, SPR_BRWK0, 0, h_ifs_updates
+ ifs_updates_not_needed:
+	jext EOI(COND_RX_WME8), h_wme_updates
 	jext EOI(COND_RX_PLCP), h_received_valid_plcp
 	jext COND_RX_COMPLETE, h_rx_complete_handler
 	jext EOI(COND_RX_BADPLCP), h_received_bad_plcp
+	jnext COND_RX_FIFOFULL, no_overflow+
+	jnext COND_4_C6, h_rx_fifo_overflow
+ no_overflow:
+	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rx_fifo_overflow
 
-	// TODO
+	jext EOI(COND_TX_NAV), h_nav_update
+	extcond_eoi_only(COND_PHY6)
+
+	/* Ok, all done. Go idle for a while... */
 
 eventloop_idle:
 	mov 0, R_WATCHDOG
@@ -204,6 +213,11 @@ h_transmit_frame:
 	//TODO
 	jmp eventloop_idle
 
+/* --- Handler: Do some TX power radio register updates FIXME --- */
+h_tx_power_updates:
+	//TODO
+	jmp eventloop_restart
+
 /* --- Handler: TX data underflow --- */
 h_tx_underflow:
 	MARKER(0)
@@ -216,9 +230,28 @@ h_tx_postprocess:
 	//TODO
 	jmp eventloop_idle
 
+/* --- Handler: Do some NAV and slot updates --- */
+h_nav_update:
+	//TODO
+	jmp eventloop_idle
+
+/* --- Handler: Do some Inter Frame Space related updates --- */
+h_ifs_updates:
+	jext COND_RX_IFS2, do_ifs_updates+
+	jnext COND_RX_IFS1, ifs_updates_not_needed	/* Return to eventloop */
+ do_ifs_updates:
+	and SPR_BRWK0, (~0x6), SPR_BRWK0
+	//TODO
+	jmp eventloop_idle
+
 /* --- Handler: The PHY threw an error --- */
 h_phy_tx_error:
 	MARKER(0)
+	//TODO
+	jmp eventloop_idle
+
+/* --- Handler: Do some WME related updates --- */
+h_wme_updates:
 	//TODO
 	jmp eventloop_idle
 
@@ -239,7 +272,7 @@ h_received_valid_plcp:
 	or SPR_BRC, 0x140, SPR_BRC
 	orx 0, 9, 1, SPR_BRC, SPR_BRC			/* SPR_BRC |= 0x200 */
 	jext COND_RX_FIFOFULL, h_rx_fifo_overflow
-	jnzx 0, 15, SPR_RXE_0x1a, 0, rx_not_ready	/* We're not ready, yet. */
+	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rxe_reset  /* We're not ready, yet. */
  rx_headerwait:						/* Wait for the header to arrive */
 	jext COND_RX_COMPLETE, rx_complete+
 	jl SPR_RXE_FRAMELEN, (PLCP_HDR_LEN + 32), rx_headerwait-
@@ -277,11 +310,6 @@ h_received_valid_plcp:
 
 	jmp eventloop_idle
 
-rx_not_ready:
-	mov 0x4, SPR_RXE_FIFOCTL1
-	mov SPR_RXE_FIFOCTL1, 0
-	jmp eventloop_idle
-
 drop_received_frame:
 	or SPR_RXE_FIFOCTL1, 0x2, SPR_RXE_FIFOCTL1
 	jmp eventloop_idle
@@ -293,7 +321,7 @@ h_received_bad_plcp:
 	jnzx 0, 12, SPR_RXE_0x1a, 0, wait-		/* Wait for the RX to complete */
 	//TODO: If we want to keep bad plcp frames, push it to host
 	jext COND_RX_FIFOFULL, h_rx_fifo_overflow
-	jnzx 0, 15, SPR_RXE_0x1a, 0, h_rx_fifo_overflow
+	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rx_fifo_overflow
 	jmp h_rxe_reset
 
 /* --- Handler: For RX-FIFO-full conditions */
@@ -335,8 +363,8 @@ h_rxe_reset:
 put_rx_frame_into_fifo:
 	/* Start FIFO operation now. */
 //	orx 1, 0, 1, SPR_RXE_FIFOCTL1, SPR_RXE_FIFOCTL1
-//	or SPR_RXE_FIFOCTL1, (1 << SPR_RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
-	xor SPR_RXE_FIFOCTL1, (1 << SPR_RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
+//	or SPR_RXE_FIFOCTL1, (1 << RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
+	xor SPR_RXE_FIFOCTL1, (1 << RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
 /* FIXME: we sometimes loop forever here. */
  wait_fifo_start:					/* Wait until FIFO starts operating */
 	jext COND_RX_FIFOFULL, overflow+

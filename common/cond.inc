@@ -21,9 +21,12 @@
 
 /* RX condition register */
 #define CONDREG_RX		0
+#define COND_RX_IFS1		EXTCOND(CONDREG_RX, 1)		/* FIXME: Inter Frame Space related */
+#define COND_RX_IFS2		EXTCOND(CONDREG_RX, 2)		/* FIXME: Inter Frame Space related */
 #define COND_RX_FCS_GOOD	EXTCOND(CONDREG_RX, 3)		/* RX FCS good */
 #define COND_RX_BADPLCP		EXTCOND(CONDREG_RX, 5)		/* Corrupt PLCP received */
 #define COND_RX_COMPLETE	EXTCOND(CONDREG_RX, 6)		/* RX complete */
+#define COND_RX_WME8		EXTCOND(CONDREG_RX, 8)		/* FIXME: Maybe WME related */
 #define COND_RX_CRYPTBUSY	EXTCOND(CONDREG_RX, 10)		/* RX crypto engine busy */
 #define COND_RX_FIFOBUSY	EXTCOND(CONDREG_RX, 11)		/* RX FIFO operating */
 #define COND_RX_FIFOFULL	EXTCOND(CONDREG_RX, 13)		/* RX FIFO full */
@@ -35,10 +38,11 @@
 /* TX condition register */
 #define CONDREG_TX		2
 #define COND_TX_NOW		EXTCOND(CONDREG_TX, 0)		/* TX should be done now */
-#define COND_TX_1		EXTCOND(CONDREG_TX, 1)		/* FIXME: Unknown meaning */
+#define COND_TX_POWER		EXTCOND(CONDREG_TX, 1)		/* FIXME: TX power related */
 #define COND_TX_2		EXTCOND(CONDREG_TX, 2)		/* FIXME: Unknown meaning */
 #define COND_TX_PMQ		EXTCOND(CONDREG_TX, 3)		/* FIXME: PMQ related? */
 #define COND_MACEN		EXTCOND(CONDREG_TX, 4)		/* MAC enabled */
+#define COND_TX_NAV		EXTCOND(CONDREG_TX, 9)		/* FIXME: NAV/slot update required? */
 #define COND_TX_UNDERFLOW	EXTCOND(CONDREG_TX, 11)		/* TX underflow */
 #define COND_TX_TBTTEXPIRE	EXTCOND(COMDREG_TX, 12)		/* FIXME: TBTT timer expired? */
 #define COND_TX_PHYERR		EXTCOND(CONDREG_TX, 13)		/* Check for PHY TX errors needed */
@@ -50,11 +54,12 @@
 #define COND_PHY0		EXTCOND(CONDREG_PHY, 0)		/* FIXME: Unknown meaning */
 #define COND_PHY1		EXTCOND(CONDREG_PHY, 1)		/* FIXME: Unknown meaning */
 #define COND_RADAR		EXTCOND(CONDREG_PHY, 2)		/* Radar detected */
+#define COND_PHY6		EXTCOND(CONDREG_PHY, 6)		/* FIXME: Unknown meaning */
 
 /* Unknown condition register */
 #define CONDREG_4		4
 #define COND_4_C1		EXTCOND(CONDREG_4, 1)		/* FIXME: Unknown meaning */
-#define COND_4_C6		EXTCOND(CONDREG_4, 6)		/* FIXME: Unknown meaning */
+#define COND_4_C6		EXTCOND(CONDREG_4, 6)		/* FIXME: Related to FIFO overflow if not set */
 #define COND_4_C9		EXTCOND(CONDREG_4, 9)		/* FIXME: Unknown meaning */
 
 /* PSM condition register */
