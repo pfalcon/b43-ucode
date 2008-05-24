@@ -22,6 +22,7 @@
 /* RX condition register */
 #define CONDREG_RX		0
 #define COND_RX_FCS_GOOD	EXTCOND(CONDREG_RX, 3)		/* RX FCS good */
+#define COND_RX_BADPLCP		EXTCOND(CONDREG_RX, 5)		/* Corrupt PLCP received */
 #define COND_RX_COMPLETE	EXTCOND(CONDREG_RX, 6)		/* RX complete */
 #define COND_RX_CRYPTBUSY	EXTCOND(CONDREG_RX, 10)		/* RX crypto engine busy */
 #define COND_RX_FIFOBUSY	EXTCOND(CONDREG_RX, 11)		/* RX FIFO operating */

@@ -25,6 +25,21 @@
 #include "../common/stack.inc"
 
 
+/* Policy decisions:
+ *
+ *	HANDLERS:
+ * Handlers are pieces of code that are jumped to from the main
+ * eventloop context. They are _not_ called and also _not_ jumped to
+ * from a function. Handlers don't need to save registers, except
+ * if it needs caller-save registers before and after a subfunction call.
+ *
+ *	FUNCTIONS:
+ * Functions are called. Usually with link register 0.
+ * If a function makes a subfunction call, it must save the link register.
+ * It must also make sure to adhere to the GPR caller/callee save rules.
+ */
+
+
 /* Frame Check Sequence length; in bytes */
 #define FCS_LEN			4
 /* Smallest possible frame length; in bytes. */
@@ -140,6 +155,7 @@ eventloop_restart:
 	//TODO more stuff needed
 	jext EOI(COND_RX_PLCP), received_valid_plcp
 	jext COND_RX_COMPLETE, rx_complete_handler
+	jext EOI(COND_RX_BADPLCP), received_bad_plcp
 
 	// TODO
 
@@ -269,6 +285,16 @@ drop_received_frame:
 	or SPR_RXE_FIFOCTL1, 0x2, SPR_RXE_FIFOCTL1
 	jmp eventloop_idle
 
+/* --- Handler: We received a PLCP (corrupt checksum) */
+received_bad_plcp:
+ wait:
+	jnzx 0, 11, SPR_RXE_0x1a, 0, eventloop_idle	/* Wasn't a PLCP */
+	jnzx 0, 12, SPR_RXE_0x1a, 0, wait-		/* Wait for the RX to complete */
+	//TODO: If we want to keep bad plcp frames, push it to host
+	jext COND_RX_FIFOFULL, rx_fifo_overflow
+	jnzx 0, 15, SPR_RXE_0x1a, 0, rx_fifo_overflow
+	jmp rxe_reset
+
 /* --- Handler: For RX-FIFO-full conditions */
 rx_fifo_overflow:
 	/* TODO: If CONDREG_4 bit6 is set, we must push the frame to the host nevertheless. Why? */
@@ -288,6 +314,11 @@ discard_rx_frame:
 rx_complete_handler:
 //	jext COND_4_C6, TODO Push frame to host
 	extcond_eoi_only(COND_RX_COMPLETE)
+
+	/* fallthrough... */
+
+/* --- Handler: RXE reset. Reset the RX engine. */
+rxe_reset:
 	mov 0x4, SPR_RXE_FIFOCTL1
 	mov SPR_RXE_FIFOCTL1, 0			/* commit */
 	jmp eventloop_idle
