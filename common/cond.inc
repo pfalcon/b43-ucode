@@ -36,8 +36,10 @@
 #define COND_TX_NOW		EXTCOND(CONDREG_TX, 0)		/* TX should be done now */
 #define COND_TX_1		EXTCOND(CONDREG_TX, 1)		/* FIXME: Unknown meaning */
 #define COND_TX_2		EXTCOND(CONDREG_TX, 2)		/* FIXME: Unknown meaning */
+#define COND_TX_PMQ		EXTCOND(CONDREG_TX, 3)		/* FIXME: PMQ related? */
 #define COND_MACEN		EXTCOND(CONDREG_TX, 4)		/* MAC enabled */
 #define COND_TX_UNDERFLOW	EXTCOND(CONDREG_TX, 11)		/* TX underflow */
+#define COND_TX_TBTTEXPIRE	EXTCOND(COMDREG_TX, 12)		/* FIXME: TBTT timer expired? */
 #define COND_TX_PHYERR		EXTCOND(CONDREG_TX, 13)		/* Check for PHY TX errors needed */
 #define COND_TX_FLUSH		EXTCOND(CONDREG_TX, 14)		/* TX flush requested */
 #define COND_TX_BUSY		EXTCOND(CONDREG_TX, 15)		/* TX engine busy */
@@ -50,8 +52,9 @@
 
 /* Unknown condition register */
 #define CONDREG_4		4
-#define CONDREG_4_C1		EXTCOND(CONDREG_4, 1)		/* FIXME: Unknown meaning */
-#define CONDREG_4_C9		EXTCOND(CONDREG_4, 9)		/* FIXME: Unknown meaning */
+#define COND_4_C1		EXTCOND(CONDREG_4, 1)		/* FIXME: Unknown meaning */
+#define COND_4_C6		EXTCOND(CONDREG_4, 6)		/* FIXME: Unknown meaning */
+#define COND_4_C9		EXTCOND(CONDREG_4, 9)		/* FIXME: Unknown meaning */
 
 /* PSM condition register */
 #define CONDREG_PSM		5
