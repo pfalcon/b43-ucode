@@ -23,6 +23,7 @@
 #include "../common/phy.inc"
 #include "../common/cond.inc"
 #include "../common/stack.inc"
+#include "../common/ieee80211.inc"
 
 
 /* Policy decisions:
@@ -41,20 +42,19 @@
  */
 
 
-/* Frame Check Sequence length; in bytes */
-#define FCS_LEN			4
-/* Smallest possible frame length; in bytes. */
-#define MIN_IEEE80211_FRAME_LEN	(((6 + 2) + 2) + FCS_LEN)
-/* Maximum possible frame length; in bytes. */
-#define MAX_IEEE80211_FRAME_LEN	(2352 + FCS_LEN)
-/* The PLCP header length; in bytes. */
-#define PLCP_HDR_LEN		6
-
-
 /* RET can't be used right after a jump instruction. Use this, if
  * you need to return right after a jump.
  * This will add a no-op before the ret. */
 #define ret_after_jmp	mov r0, r0 ; ret
+
+/* Flush a Special Purpose Register write and any cache and pipeline. */
+#define flush_spr_write_cache(reg)		\
+	mov reg, 0;				\
+	jl 0, 1, __next_insn+;			\
+   __next_insn:;
+
+/* Flush any cache and pipeline */
+#define flush_cache	flush_spr_write_cache(r0)
 
 #define lo16(val)	((val) & 0xFFFF)
 #define hi16(val)	(((val) >> 16) & 0xFFFF)
@@ -267,18 +267,43 @@ h_received_valid_plcp:
 	jl SPR_TSF_WORD0, [SHM_RX_TSF0], tsf_again-	/* word0 overflow */
 	jzx 0, 0, SPR_TXE0_CTL, 0, txengine_ok+
 	mov 0, SPR_TXE0_CTL				/* Disable the TX engine */
-	and SPR_BRC, (~3), SPR_BRC
+	and SPR_BRC, (~0x7), SPR_BRC
  txengine_ok:
 	or SPR_BRC, 0x140, SPR_BRC
 	orx 0, 9, 1, SPR_BRC, SPR_BRC			/* SPR_BRC |= 0x200 */
 	jext COND_RX_FIFOFULL, h_rx_fifo_overflow
 	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rxe_reset  /* We're not ready, yet. */
- rx_headerwait:						/* Wait for the header to arrive */
+	/* Wait for the IEEE 802.11 header to arrive in SHM. */
+ rx_headerwait:
 	jext COND_RX_COMPLETE, rx_complete+
-	jl SPR_RXE_FRAMELEN, (PLCP_HDR_LEN + 32), rx_headerwait-
+	jl SPR_RXE_FRAMELEN, SHM_RXFRAME_HDR_LEN, rx_headerwait-
  rx_complete:
 	jl SPR_RXE_FRAMELEN, (MIN_IEEE80211_FRAME_LEN + PLCP_HDR_LEN), drop_received_frame
 
+	/* Header sanity checks */
+	jnzx 0, MACCTL_KEEP_BAD, SPR_MAC_CTLHI, 0, no_hdr_sanity_chk+
+	/* Version != 0 -> Drop */
+	jnzx FCTL_VERS_M, FCTL_VERS_S, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, drop_received_frame
+ no_hdr_sanity_chk:
+
+	and R_FLAGS0, (~(1 << FLG0_RXFRAME_WDS)), R_FLAGS0
+	jzx 1, FCTL_TODS /* + FROMDS */, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, no_wds+
+	/* This is a WDS frame */
+	or R_FLAGS0, (1 << FLG0_RXFRAME_WDS), R_FLAGS0
+ no_wds:
+
+	srx 0, FLG0_RXFRAME_WDS, R_FLAGS0, 0, Ra
+	//TODO: logical invert Ra, if this is a QOS Data frame
+	sl Ra, 5, SPR_RXE_FIFOCTL1
+
+	/* Update the Network Allocation Vector */
+	jext COND_RX_RAMATCH, no_dur_write+
+	jnzx 0, DURID_CFP, [(SHM_RXFRAME_HDR + DURID_WOFFSET)], 0, no_dur_write+
+	mov [(SHM_RXFRAME_HDR + DURID_WOFFSET)], SPR_NAV_ALLOCATION
+	orx 4, 11, 0x2, SPR_NAV_CTL, SPR_NAV_CTL
+ no_dur_write:
+
+	/* TODO: Init hardware crypto engine, if the packet is protected. */
 	mov 0x8300, SPR_WEP_CTL				/* Disable crypto */
 	or SPR_RXE_FIFOCTL1, 0x2, SPR_RXE_FIFOCTL1
 	and SPR_BRC, (~0x40), SPR_BRC
@@ -296,6 +321,8 @@ h_received_valid_plcp:
 	mov SPR_RXE_PHYRXSTAT1, [SHM_RXHDR_PHYSTAT1]
 	mov SPR_RXE_PHYRXSTAT2, [SHM_RXHDR_PHYSTAT2]
 	mov SPR_RXE_PHYRXSTAT3, [SHM_RXHDR_PHYSTAT3]
+	mov 0, [SHM_RXHDR_MACSTAT0]
+	mov 0, [SHM_RXHDR_MACSTAT1]
 	mov [SHM_RX_TSF0], [SHM_RXHDR_TIME]
 	mov 0x008, Ra
 	call lr0, phy_read
@@ -306,7 +333,6 @@ h_received_valid_plcp:
 	jne Ra, 0, h_rx_fifo_overflow
 
 	and SPR_RXE_FIFOCTL1, (~2), SPR_RXE_FIFOCTL1
-//MARKER(11)
 
 	jmp eventloop_idle
 
@@ -372,9 +398,7 @@ put_rx_frame_into_fifo:
  wait_fifo_finish:					/* Wait for FIFO to finish operation */
 	jext COND_RX_FIFOFULL, overflow+
 	jext COND_RX_FIFOBUSY, wait_fifo_finish-
-	mov r0, r0					/* Flush the pipelines */
-	je 0, 0, next+					/* Flush the pipelines */
- next:
+	flush_cache					/* Flush the pipelines */
 	jext COND_RX_FIFOFULL, overflow+
 	mov 0, Ra					/* return code 0 */
  out:

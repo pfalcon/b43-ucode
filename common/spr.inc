@@ -389,13 +389,13 @@
 #define SPR_IFS_0x7a				spr17d
 #define SPR_IFS_0x7c				spr17e
 #define SPR_IFS_0x7e				spr17f
-#define SPR_NAV_Control				spr180
-#define SPR_NAV_Stat				spr181
+#define SPR_NAV_CTL				spr180
+#define SPR_NAV_STAT				spr181
 #define SPR_NAV_0x04				spr182
 #define SPR_NAV_0x06				spr183
 #define SPR_NAV_0x08				spr184
 #define SPR_NAV_0x0a				spr185
-#define SPR_NAV_0x0c				spr186
+#define SPR_NAV_ALLOCATION			spr186
 #define SPR_NAV_0x0e				spr187
 #define SPR_NAV_0x10				spr188
 #define SPR_NAV_0x12				spr189

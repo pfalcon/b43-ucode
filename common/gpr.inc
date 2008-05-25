@@ -16,6 +16,10 @@
 
 #define R_WATCHDOG		r1
 
+/* Registers for various global flags. */
+#define R_FLAGS0		r34
+#define  FLG0_RXFRAME_WDS	0 /* bit0: The received frame is a WDS frame. */
+
 /* Registers used by the stack implementation only. */
 #define R_STACK_POINTER		r35
 #define R_STACK_SCRATCH0	r36
