@@ -287,7 +287,8 @@ h_received_valid_plcp:
  no_hdr_sanity_chk:
 
 	and R_FLAGS0, (~(1 << FLG0_RXFRAME_WDS)), R_FLAGS0
-	jzx 1, FCTL_TODS /* + FROMDS */, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, no_wds+
+	jzx 0, FCTL_TODS, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, no_wds+
+	jzx 0, FCTL_FROMDS, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, no_wds+
 	/* This is a WDS frame */
 	or R_FLAGS0, (1 << FLG0_RXFRAME_WDS), R_FLAGS0
  no_wds:
