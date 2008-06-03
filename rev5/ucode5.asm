@@ -387,11 +387,10 @@ h_rxe_reset:
  *   Ra == 1 -> Fifo overflow
  */
 put_rx_frame_into_fifo:
+	mov SHM_RXHDR, SPR_RXE_RXHDR_OFFSET
+	mov SHM_RXHDR_SIZE, SPR_RXE_RXHDR_LEN
 	/* Start FIFO operation now. */
-//	orx 1, 0, 1, SPR_RXE_FIFOCTL1, SPR_RXE_FIFOCTL1
-//	or SPR_RXE_FIFOCTL1, (1 << RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
-	xor SPR_RXE_FIFOCTL1, (1 << RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
-/* FIXME: we sometimes loop forever here. */
+	or SPR_RXE_FIFOCTL1, (1 << RXE_FIFOCTL1_STARTCOPY), SPR_RXE_FIFOCTL1
  wait_fifo_start:					/* Wait until FIFO starts operating */
 	jext COND_RX_FIFOFULL, overflow+
 	jnext COND_RX_FIFOBUSY, wait_fifo_start-
