@@ -137,7 +137,7 @@ eventloop_restart:
 	jzx 0, 3, SPR_IFS_STAT, 0, no_txstat+
 	//TODO process TXstat
  no_txstat:
-	call lr0, update_gphy_classify_ctl	/* Classify ctrl from SHM to PHY */
+//FIXME	call lr0, update_gphy_classify_ctl	/* Classify ctrl from SHM to PHY */
 	mov lo16(280000), SPR_TSF_GPT0_VALLO	/* GP Timer 0: Value = 280,000 */
 	mov hi16(280000), SPR_TSF_GPT0_VALHI
 	orx 0, 14, 0x3, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GPT0: Start and ON */
@@ -327,7 +327,7 @@ h_received_valid_plcp:
 	mov [SHM_RX_TSF0], [SHM_RXHDR_TIME]
 	mov 0x008, Ra
 	call lr0, phy_read
-	sl Ra, 2, Ra
+	sl Ra, 3, Ra
 	or Ra, [SHM_PHYTYPE], [SHM_RXHDR_CHAN]
 
 	call lr0, put_rx_frame_into_fifo

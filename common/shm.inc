@@ -152,6 +152,11 @@
 
 /* --- Misc offsets that are only valid for the OpenSource firmware. --- */
 
+/* The place where the driver will put the hwcrypto keys to.
+ * The key table pointer will point to this. */
+#define SHM_KEY_TABLE_START	SHM(0xB88) /* First word */
+#define SHM_KEY_TABLE_END	SHM(0xF26) /* Last word */
+
 /* RX-header for the driver.
  * The RXE will take it from here and put it into the DMA FIFO. */
 #define SHM_RXHDR		SHM(0xF28) /* Address where the RXE will take the RXHDR from */

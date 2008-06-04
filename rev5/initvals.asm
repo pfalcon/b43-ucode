@@ -87,7 +87,8 @@
 
 	/* Magic stack-end signature used to detect stack overflow. */
 	shm16 MAGIC_STACK_END, HOST_SHM_SHARED, (SHM_STACK_END * 2)
-
+	/* Key table pointer */
+	shm16 SHM_KEY_TABLE_START, HOST_SHM_SHARED, (SHM_KTP * 2)
 	/* Unused padding in RX header */
 	shm16 0, HOST_SHM_SHARED, (SHM_RXHDR_PAD * 2)
 
