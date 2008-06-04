@@ -9,6 +9,7 @@
 #define SPR_RXE_FIFOCTL0			spr003
 #define SPR_RXE_FIFOCTL1			spr004
 #define  RXE_FIFOCTL1_STARTCOPY			0 /* bit0: Start copying the data into the FIFO */
+#define  RXE_FIFOCTL1_HAVEPAD			5 /* bit5: Padding for RX frame present */
 #define SPR_Received_Frame_Count		spr005
 #define SPR_RXE_0x0c				spr006
 #define SPR_RXE_RXHDR_OFFSET			spr007

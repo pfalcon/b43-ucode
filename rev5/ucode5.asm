@@ -330,6 +330,10 @@ h_received_valid_plcp:
 	sl Ra, 3, Ra
 	or Ra, [SHM_PHYTYPE], [SHM_RXHDR_CHAN]
 
+	jzx 0, RXE_FIFOCTL1_HAVEPAD, SPR_RXE_FIFOCTL1, 0, nopad+
+	or [SHM_RXHDR_MACSTAT0], 0x4 /* FIXME define a name*/, [SHM_RXHDR_MACSTAT0]
+ nopad:
+
 	call lr0, put_rx_frame_into_fifo
 	jne Ra, 0, h_rx_fifo_overflow
 
