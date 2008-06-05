@@ -99,6 +99,22 @@
 #define DURID_WOFFSET		((PLCP_HDR_LEN + 2) / 2)
 #define DURID_CFP		15 /* bit 15: Set if TX-by-PC & non-QoS & CFP */
 
+/* Address 1 WORD(!)-offset in the frame */
+#define ADDR1_WOFFSET		((PLCP_HDR_LEN + 4) / 2)
+#define ADDR_MCAST_BIT		0 /* bit 0 indicates a multicast address */
+
+/* Address 2 WORD(!)-offset in the frame */
+#define ADDR2_WOFFSET		((PLCP_HDR_LEN + 10) / 2)
+
+/* Address 3 WORD(!)-offset in the frame */
+#define ADDR3_WOFFSET		((PLCP_HDR_LEN + 16) / 2)
+
+/* Sequency counter WORD(!)-offset in the frame */
+#define SEQCTL_WOFFSET		((PLCP_HDR_LEN + 22) / 2)
+
+/* Address 4 WORD(!)-offset in the frame */
+#define ADDR4_WOFFSET		((PLCP_HDR_LEN + 24) / 2)
+
 
 #endif /* IEEE80211_DEFINITIONS_H_ */
 

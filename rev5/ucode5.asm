@@ -337,6 +337,12 @@ h_received_valid_plcp:
 	mov (MAX_IEEE80211_FRAME_LEN + PLCP_HDR_LEN), Ra
 	jg SPR_RXE_FRAMELEN, Ra, drop_received_frame
 
+	/* Check if we are the receiver */
+	jnzx 0, MACCTL_PROMISC, SPR_MAC_CTLHI, 0, frame_is_for_us+
+	jnzx 0, ADDR_MCAST_BIT, [(SHM_RXFRAME_HDR + ADDR1_WOFFSET)], 0, frame_is_for_us+
+	jnext COND_RX_RAMATCH, drop_received_frame
+ frame_is_for_us:
+
 	/* RX header setup */
 	mov SPR_RXE_FRAMELEN, [SHM_RXHDR_FRAMELEN]
 	mov SPR_RXE_PHYRXSTAT0, [SHM_RXHDR_PHYSTAT0]
