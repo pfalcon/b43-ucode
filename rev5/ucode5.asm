@@ -349,6 +349,14 @@ h_received_valid_plcp:
 	sl Ra, 3, Ra
 	or Ra, [SHM_PHYTYPE], [SHM_RXHDR_CHAN]
 
+	/* Check the FCS */
+	jext COND_RX_FCS_GOOD, fcs_ok+
+	or [SHM_RXHDR_MACSTAT0], (1 << MACSTAT0_FCSERR), [SHM_RXHDR_MACSTAT0]
+ fcs_ok:
+	jnzx 0, MACCTL_KEEP_BAD, SPR_MAC_CTLHI, 0, no_drop_bad+
+	jnext COND_RX_FCS_GOOD, drop_received_frame
+ no_drop_bad:
+
 	call lr0, put_rx_frame_into_fifo
 	jne Ra, 0, h_rx_fifo_overflow
 
