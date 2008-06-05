@@ -167,6 +167,11 @@
 #define  SHM_RXHDR_PHYSTAT2	SHM(0xF30) /* PHY RX Status 2 */
 #define  SHM_RXHDR_PHYSTAT3	SHM(0xF32) /* PHY RX Status 3 */
 #define  SHM_RXHDR_MACSTAT0	SHM(0xF34) /* MAC RX Status low */
+#define   MACSTAT0_FCSERR		0 /* bit0: FCS error */
+#define   MACSTAT0_RESP			1 /* bit1: Response frame transmitted */
+#define   MACSTAT0_PADDING		2 /* bit2: Pad bytes present */
+#define   MACSTAT0_DEC			3 /* bit3: Decryption attempted */
+#define   MACSTAT0_DECERR		4 /* bit4: Decrypt error */
 #define  SHM_RXHDR_MACSTAT1	SHM(0xF36) /* MAC RX Status high */
 #define  SHM_RXHDR_TIME		SHM(0xF38) /* MAC time + PHY delay */
 #define  SHM_RXHDR_CHAN		SHM(0xF3A) /* RX Channel information */

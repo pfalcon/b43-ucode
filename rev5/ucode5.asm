@@ -280,11 +280,20 @@ h_received_valid_plcp:
  rx_complete:
 	jl SPR_RXE_FRAMELEN, (MIN_IEEE80211_FRAME_LEN + PLCP_HDR_LEN), drop_received_frame
 
+	/* Start with no MAC status bit set. We will OR the bits as needed. */
+	mov 0, [SHM_RXHDR_MACSTAT0]
+	mov 0, [SHM_RXHDR_MACSTAT1]
+
 	/* Header sanity checks */
 	jnzx 0, MACCTL_KEEP_BAD, SPR_MAC_CTLHI, 0, no_hdr_sanity_chk+
 	/* Version != 0 -> Drop */
 	jnzx FCTL_VERS_M, FCTL_VERS_S, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, drop_received_frame
  no_hdr_sanity_chk:
+
+	/* Put the frametype into Ri */
+	srx FCTL_FTYPE_M, FCTL_FTYPE_S, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, Ri
+	/* Put the framesubtype into Rj */
+	srx FCTL_STYPE_M, FCTL_STYPE_S, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, Rj
 
 	and R_FLAGS0, (~(1 << FLG0_RXFRAME_WDS)), R_FLAGS0
 	jzx 0, FCTL_TODS, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, no_wds+
@@ -293,9 +302,21 @@ h_received_valid_plcp:
 	or R_FLAGS0, (1 << FLG0_RXFRAME_WDS), R_FLAGS0
  no_wds:
 
-	srx 0, FLG0_RXFRAME_WDS, R_FLAGS0, 0, Ra
-	//TODO: logical invert Ra, if this is a QOS Data frame
-	sl Ra, 5, SPR_RXE_FIFOCTL1
+	/* Set the "is-QoS-frame" indicator bit */
+	srx 0, STYPE_QOS_BIT, Rj, 0, Ra			/* FCTL stype QoS bit lookup */
+	je Ri, FTYPE_DATA, is_data+			/* Is this a data frame? */
+	mov 0, Ra					/* No. So can't be QoS data, too */
+ is_data:
+	orx 0, FLG0_RXFRAME_WDS, Ra, R_FLAGS0, R_FLAGS0	/* Set or clear flag */
+
+	/* Setup the RX FIFO data padding to align the IP header. */
+	/* Ra is still set to the QoS indicator */
+	srx 0, FLG0_RXFRAME_WDS, R_FLAGS0, 0, Rb
+	xor Ra, Rb, Ra					/* Need padding if (QoS ^ WDS) */
+	/* Tell the FIFO engine whether we want padding or not. */
+	orx 0, RXE_FIFOCTL1_HAVEPAD, Ra, SPR_RXE_FIFOCTL1, SPR_RXE_FIFOCTL1
+	/* Also set the MAC status bit to tell the driver about the padding. */
+	orx 0, MACSTAT0_PADDING, Ra, [SHM_RXHDR_MACSTAT0], [SHM_RXHDR_MACSTAT0]
 
 	/* Update the Network Allocation Vector */
 	jext COND_RX_RAMATCH, no_dur_write+
@@ -322,17 +343,11 @@ h_received_valid_plcp:
 	mov SPR_RXE_PHYRXSTAT1, [SHM_RXHDR_PHYSTAT1]
 	mov SPR_RXE_PHYRXSTAT2, [SHM_RXHDR_PHYSTAT2]
 	mov SPR_RXE_PHYRXSTAT3, [SHM_RXHDR_PHYSTAT3]
-	mov 0, [SHM_RXHDR_MACSTAT0]
-	mov 0, [SHM_RXHDR_MACSTAT1]
 	mov [SHM_RX_TSF0], [SHM_RXHDR_TIME]
 	mov 0x008, Ra
 	call lr0, phy_read
 	sl Ra, 3, Ra
 	or Ra, [SHM_PHYTYPE], [SHM_RXHDR_CHAN]
-
-	jzx 0, RXE_FIFOCTL1_HAVEPAD, SPR_RXE_FIFOCTL1, 0, nopad+
-	or [SHM_RXHDR_MACSTAT0], 0x4 /* FIXME define a name*/, [SHM_RXHDR_MACSTAT0]
- nopad:
 
 	call lr0, put_rx_frame_into_fifo
 	jne Ra, 0, h_rx_fifo_overflow

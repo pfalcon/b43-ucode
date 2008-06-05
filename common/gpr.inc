@@ -19,6 +19,7 @@
 /* Registers for various global flags. */
 #define R_FLAGS0		r34
 #define  FLG0_RXFRAME_WDS	0 /* bit0: The received frame is a WDS frame. */
+#define  FLG0_RXFRAME_QOS	1 /* bit1: The received frame is a QoS Data frame. */
 
 /* Registers used by the stack implementation only. */
 #define R_STACK_POINTER		r35
