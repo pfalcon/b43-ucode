@@ -109,7 +109,7 @@
 /* Address 3 WORD(!)-offset in the frame */
 #define ADDR3_WOFFSET		((PLCP_HDR_LEN + 16) / 2)
 
-/* Sequency counter WORD(!)-offset in the frame */
+/* Sequence counter WORD(!)-offset in the frame */
 #define SEQCTL_WOFFSET		((PLCP_HDR_LEN + 22) / 2)
 
 /* Address 4 WORD(!)-offset in the frame */
