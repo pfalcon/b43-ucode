@@ -210,7 +210,7 @@ update_gphy_classify_ctl:
 
 /* --- Handler: Do some channel setup --- */
 h_channel_setup:
-	MARKER(0)
+//	MARKER(0)
 	jmp eventloop_restart
 
 /* --- Handler: Transmit another frame --- */
@@ -389,9 +389,10 @@ h_received_valid_plcp:
 
 	jmp eventloop_idle
 
+/* Wait for the RX to complete and then drop the frame. */
 drop_received_frame:
-	or SPR_RXE_FIFOCTL1, 0x2, SPR_RXE_FIFOCTL1
-	jmp eventloop_idle
+ wait:	jnext EOI(COND_RX_COMPLETE), wait-
+	jmp h_discard_rx_frame
 
 /* --- Handler: We received a PLCP (corrupt checksum) */
 h_received_bad_plcp:
