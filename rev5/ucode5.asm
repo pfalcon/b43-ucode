@@ -291,7 +291,7 @@ h_received_valid_plcp:
 	or SPR_BRC, 0x140, SPR_BRC
 	orx 0, 9, 1, SPR_BRC, SPR_BRC			/* SPR_BRC |= 0x200 */
 	jext COND_RX_FIFOFULL, h_rx_fifo_overflow
-	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rxe_reset  /* We're not ready, yet. */
+	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rx_fifo_overflow
 	/* Wait for the IEEE 802.11 header to arrive in SHM. */
  rx_headerwait:
 	jext COND_RX_COMPLETE, rx_complete+
@@ -402,7 +402,8 @@ h_received_bad_plcp:
 	//TODO: If we want to keep bad plcp frames, push it to host
 	jext COND_RX_FIFOFULL, h_rx_fifo_overflow
 	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rx_fifo_overflow
-	jmp h_rxe_reset
+	extcond_eoi_only(COND_RX_FIFOFULL)
+	jmp h_discard_rx_frame
 
 /* --- Handler: For RX-FIFO-full conditions */
 h_rx_fifo_overflow:
@@ -423,11 +424,6 @@ h_discard_rx_frame:
 h_rx_complete_handler:
 //	jext COND_4_C6, TODO Push frame to host
 	extcond_eoi_only(COND_RX_COMPLETE)
-
-	/* fallthrough... */
-
-/* --- Handler: RXE reset. Reset the RX engine. */
-h_rxe_reset:
 	mov 0x4, SPR_RXE_FIFOCTL1
 	mov SPR_RXE_FIFOCTL1, 0			/* commit */
 	jmp eventloop_idle
