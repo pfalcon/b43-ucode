@@ -298,6 +298,8 @@
 #define SPR_TSF_0x42				spr121
 #define SPR_TSF_0x44				spr122
 #define SPR_TSF_GPT0_STAT			spr123
+#define  GPT_STAT_EN				15 /* bit15: Enable the timer */
+#define  GPT_STAT_8MHZ				14 /* bit14: Use 8MHz base (otherwise 88Mhz) */
 #define SPR_TSF_GPT1_STAT			spr124
 #define SPR_TSF_GPT0_CNTLO			spr125
 #define SPR_TSF_GPT1_CNTLO			spr126
@@ -313,12 +315,12 @@
 #define SPR_TSF_0x60				spr130
 #define SPR_TSF_0x62				spr131
 #define SPR_TSF_0x64				spr132
-#define SPR_TSF_GPT2_Stat			spr133
-#define SPR_TSF_GPT2_Counter_Low		spr134
-#define SPR_TSF_GPT2_Counter_High		spr135
-#define SPR_TSF_GPT2_Value_Low			spr136
-#define SPR_TSF_GPT2_Value_High			spr137
-#define SPR_TSF_GPT_All_Stat			spr138
+#define SPR_TSF_GPT2_STAT			spr133
+#define SPR_TSF_GPT2_CNTLO			spr134
+#define SPR_TSF_GPT2_CNTHI			spr135
+#define SPR_TSF_GPT2_VALLO			spr136
+#define SPR_TSF_GPT2_VALHI			spr137
+#define SPR_TSF_GPT_ALL_STAT			spr138
 #define SPR_TSF_0x72				spr139
 #define SPR_TSF_0x74				spr13a
 #define SPR_TSF_0x76				spr13b

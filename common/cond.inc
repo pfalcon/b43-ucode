@@ -60,6 +60,7 @@
 #define CONDREG_4		4
 #define COND_4_C1		EXTCOND(CONDREG_4, 1)		/* FIXME: Unknown meaning */
 #define COND_4_C6		EXTCOND(CONDREG_4, 6)		/* FIXME: Related to FIFO overflow if not set */
+#define COND_4_C7		EXTCOND(CONDREG_4, 7)		/* FIXME: Unknown. Updates some stuff. */
 #define COND_4_C9		EXTCOND(CONDREG_4, 9)		/* FIXME: Unknown meaning */
 
 /* PSM condition register */

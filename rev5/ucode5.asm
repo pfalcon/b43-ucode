@@ -95,15 +95,15 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov 2, SPR_PHY_HDR_Parameter
 	mov R_MIN_CONTWND, R_CUR_CONTWND
 	and SPR_TSF_Random, R_CUR_CONTWND, SPR_IFS_BKOFFDELAY
-	mov 0x4000, SPR_TSF_GPT0_STAT		/* GP Timer 0: 8MHz */
-	mov lo16(280000), SPR_TSF_GPT0_CNTLO	/* GP Timer 0: Counter = 280,000 */
+	mov (1 << GPT_STAT_8MHZ), SPR_TSF_GPT0_STAT	/* GP Timer 0: 8MHz */
+	mov lo16(280000), SPR_TSF_GPT0_CNTLO		/* GP Timer 0: Counter = 280,000 */
 	mov hi16(280000), SPR_TSF_GPT0_CNTHI
 
 /* -- The MAC suspend loop -- */
  sleep:
 	mov SHM_UCODESTAT_SUSP, [SHM_UCODESTAT]
 	mov IRQLO_MAC_SUSPENDED, SPR_MAC_IRQLO
-	orx 0, 15, 0, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: clear Start */
+	orx 0, GPT_STAT_EN, 0, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: disable */
  self:	jnext COND_MACEN, self-
 
 	mov SHM_UCODESTAT_ACTIVE, [SHM_UCODESTAT]
@@ -114,7 +114,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov 0xFFFF, SPR_BRCL3
 	or SPR_RXE_FIFOCTL1, 0x0004, SPR_RXE_FIFOCTL1
  self:	jnzx 0, 2, SPR_RXE_FIFOCTL1, 0, self-	/* Wait for 0x4 to clear */
-	orx 0, 15, 1, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: Start */
+	orx 0, GPT_STAT_EN, 1, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: Start */
 	mov 0, SPR_BRCL0
 	mov 0, SPR_BRCL1
 	mov 0, SPR_BRCL2
@@ -140,7 +140,7 @@ eventloop_restart:
 //FIXME	call lr0, update_gphy_classify_ctl	/* Classify ctrl from SHM to PHY */
 	mov lo16(280000), SPR_TSF_GPT0_VALLO	/* GP Timer 0: Value = 280,000 */
 	mov hi16(280000), SPR_TSF_GPT0_VALHI
-	orx 0, 14, 0x3, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GPT0: Start and ON */
+	orx 1, 14, 0x3, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GPT0: Start and 8MHz */
 	jnext COND_MACEN, sleep			/* Driver disabled the MAC? Go to sleep. */
 
 	jnext COND_TX_FLUSH, no_txflush+
@@ -155,7 +155,7 @@ eventloop_restart:
 	jext COND_TX_PHYERR, h_phy_tx_error
 	jnzx 3, 1, SPR_BRWK0, 0, h_ifs_updates
  ifs_updates_not_needed:
-	jext EOI(COND_RX_WME8), h_wme_updates
+	jext EOI(COND_RX_WME8), h_tx_timers_setup
 	jext EOI(COND_RX_PLCP), h_received_valid_plcp
 	jext COND_RX_COMPLETE, h_rx_complete_handler
 	jext EOI(COND_RX_BADPLCP), h_received_bad_plcp
@@ -165,6 +165,7 @@ eventloop_restart:
 	jnzx 0, RXE_0x1a_OVERFLOW, SPR_RXE_0x1a, 0, h_rx_fifo_overflow
 
 	jext EOI(COND_TX_NAV), h_nav_update
+	jnext COND_4_C7, h_channel_setup
 	extcond_eoi_only(COND_PHY6)
 
 	/* Ok, all done. Go idle for a while... */
@@ -207,6 +208,11 @@ update_gphy_classify_ctl:
 	POP(SPR_PC0)
 	ret lr0, lr0
 
+/* --- Handler: Do some channel setup --- */
+h_channel_setup:
+	MARKER(0)
+	jmp eventloop_restart
+
 /* --- Handler: Transmit another frame --- */
 h_transmit_frame:
 	MARKER(0)
@@ -215,6 +221,7 @@ h_transmit_frame:
 
 /* --- Handler: Do some TX power radio register updates FIXME --- */
 h_tx_power_updates:
+	MARKER(0)
 	//TODO
 	jmp eventloop_restart
 
@@ -232,6 +239,7 @@ h_tx_postprocess:
 
 /* --- Handler: Do some NAV and slot updates --- */
 h_nav_update:
+	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
@@ -241,6 +249,7 @@ h_ifs_updates:
 	jnext COND_RX_IFS1, ifs_updates_not_needed	/* Return to eventloop */
  do_ifs_updates:
 	and SPR_BRWK0, (~0x6), SPR_BRWK0
+	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
@@ -250,10 +259,20 @@ h_phy_tx_error:
 	//TODO
 	jmp eventloop_idle
 
-/* --- Handler: Do some WME related updates --- */
-h_wme_updates:
-	//TODO
+/* --- Handler: Setup and start the TX related timers --- */
+h_tx_timers_setup:
+	jzx 0, 8, SPR_BRPO0, 0, transmit_timers_prepare	/* Check 0x100 */
+	and SPR_BRPO0, (~0x100), SPR_BRPO0
+	orx 0, GPT_STAT_EN, 1, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT  /* Enable GPT0 */
 	jmp eventloop_idle
+
+transmit_timers_prepare:
+	jnzx 0, 11, SPR_IFS_STAT, 0, no_brpo0+		/* Check 0x800 */
+	or SPR_BRPO0, 0x100, SPR_BRPO0
+	//TODO setup 2050 radio txctl
+ no_brpo0:
+	mov (1 << GPT_STAT_8MHZ), SPR_TSF_GPT2_STAT
+	jmp eventloop_restart
 
 /* --- Handler: We received a PLCP */
 h_received_valid_plcp:
