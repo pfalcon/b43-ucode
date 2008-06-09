@@ -152,6 +152,12 @@
 
 /* --- Misc offsets that are only valid for the OpenSource firmware. --- */
 
+
+/* Background noise measuring context */
+#define SHM_BGN_START_TSF1	SHM(0xB84) /* TSF word1 when the measurement started */
+#define SHM_BGN_STATUS		SHM(0xB86)
+#define  BGN_INPROGRESS		0 /* bit0: Background noise measurement in progress */
+
 /* The place where the driver will put the hwcrypto keys to.
  * The key table pointer will point to this. */
 #define SHM_KEY_TABLE_START	SHM(0xB88) /* First word */

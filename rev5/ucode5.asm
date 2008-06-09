@@ -75,7 +75,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	/* We encode our versioning info in the "time" field. */
 	mov VERSION, [SHM_UCODETIME]
 
-	mov SHM_STACK_START, R_STACK_POINTER
+	mov SHM_STACK_START, BASER_STACKPTR
 
 	/* Initialize the hardware */
 	mov 0, SPR_GPIO_Out			/* Disable any GPIO pin */
@@ -210,6 +210,7 @@ update_gphy_classify_ctl:
 
 /* --- Handler: Do some channel setup --- */
 h_channel_setup:
+	call lr0, create_bg_noise_sample
 //	MARKER(0)
 	jmp eventloop_restart
 
@@ -534,6 +535,39 @@ radio_write:
 	POP(SPR_PC0)
 	ret lr0, lr0
 
+/* --- Function: Create another background noise sample and put it into SHM ---
+ * Link Register: lr0
+ * This function takes no parameters and returns nothing.
+ */
+create_bg_noise_sample:
+	PUSH(SPR_PC0)
+	jzx 0, MACCMD_BGNOISE, SPR_MAC_CMD, 0, out+
+	/* TODO: What do do here:
+	 * First we read the JSSI_AUX from phy register 0x8. This is the lower 8bit.
+	 * Then we read OFDM PHY register 0x5F (PHY PACK CNT). This is the upper 8bit of the JSSI_AUX.
+	 * If this is an A-PHY, we need to save and setup PHY/radio registers: TODO
+	 * For the B/G PHY we read the noise samples from PHY register BPHY_JSSI.
+	 * Before reading the JSSI PHY register, wait 2 microseconds. In these 2 uS
+	 * check whether we want to transmit something. If TX is pending, cancel
+	 * this measuring round and return later. Also check (IFS_STAT & 0x800). If that
+	 * gets set within the 2 microseconds and we started the whole measurement less
+	 * than 130 milliseconds ago, return and redo this later.
+	 * Read the sample from the PHY register and put it into the next free SHM location.
+	 * TODO: The APHY sample is special.
+	 * Repeat the whole thing (including the TX check) 4 times to fill all 4 samples.
+	 * If the whole measurement process took less than 130 milliseconds, do this:
+	 *	Wait for 24 microseconds. If within these 24 microseconds we receive a
+	 *	TX request of (IFS_STAT & 0x800) is set, we interrupt the measurement
+	 *	and return and recreate it later.
+	 * We successfully generated 4 noise samples. Clear the noise-sample-request bit
+	 * and send an interrupt to the driver.
+	 * Before returning from the function, clean up any APHY register, if needed.
+	 */
+//TODO
+ out:
+	POP(SPR_PC0)
+	ret lr0, lr0
+
 /* --- Function: Lowlevel panic helper --- 
  * Link Register: Doesn't matter. This won't return anyway.
  * The Panic reason is passed in R_PANIC_REASON
@@ -555,7 +589,6 @@ wait:	jne R_DEBUGIRQ_REASON, DEBUGIRQ_ACK, wait- /* Wait for kernel to respond. 
 	ret_after_jmp lr0, lr0
 #endif /* DEBUG */
 
-#include "../common/stack.asm"
 #include "initvals.asm"
 
 // vim: syntax=b43 ts=8

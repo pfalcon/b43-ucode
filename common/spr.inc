@@ -77,7 +77,12 @@
 #define SPR_MAC_IRQMASKLO			spr044
 #define SPR_MAC_IRQMASKHI			spr045
 #define SPR_PSM_0x0c				spr046
-#define SPR_MAC_Command				spr047
+#define SPR_MAC_CMD				spr047
+#define  MACCMD_BEAC0				0 /* bit0: Beacon 0 busy/valid */
+#define  MACCMD_BEAC1				1 /* bit1: Beacon 1 busy/valid */
+#define  MACCMD_DFQ				2 /* bit2: Directed frame queue valid */
+#define  MACCMD_CCA				3 /* bit3: Channel clear assessment */
+#define  MACCMD_BGNOISE				4 /* bit4: BG-noise measurement request */
 #define SPR_BRC					spr048
 #define SPR_PHY_HDR_Parameter			spr049
 #define SPR_Postcard				spr04a

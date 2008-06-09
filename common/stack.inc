@@ -3,15 +3,17 @@
 
 #include "gpr.inc"
 
-/* The link register used for stack operations.
- * This link register is clobbered on every stack operation. */
-#define STACK_LINK_REGISTER	lr3
 
-#define PUSH(value)	mov value, R_STACK_SCRATCH0;	\
-			call STACK_LINK_REGISTER, __stack_push;
+/* Push a value (can be anything that's valid as operand) to the stack */
+#define PUSH(value)									\
+	mov value, [0, OFFR_STACKPTR]		/* Save the value on the stack */	\
+	sub BASER_STACKPTR, 1, BASER_STACKPTR	/* Decrement stack pointer */
 
-#define POP(register)	call STACK_LINK_REGISTER, __stack_pop;	\
-			mov R_STACK_SCRATCH0, register;
+
+/* Pop the last entry from the stack and save it in the register */
+#define POP(register)									\
+	add BASER_STACKPTR, 1, BASER_STACKPTR	/* Increment stack pointer */		\
+	mov [0, OFFR_STACKPTR], register	/* Restore the value from the stack */
 
 
 #endif /* STACK_EMULATION_H_ */

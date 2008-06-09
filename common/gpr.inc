@@ -1,6 +1,9 @@
 #ifndef GENERAL_PURPOSE_REGISTERS_H_
 #define GENERAL_PURPOSE_REGISTERS_H_
 
+/* --- General purpose register definitions --- */
+
+
 /* Registers with a special function throughout the whole code. */
 #define R_MIN_CONTWND		r3
 #define R_MAX_CONTWND		r4
@@ -20,11 +23,6 @@
 #define R_FLAGS0		r34
 #define  FLG0_RXFRAME_WDS	0 /* bit0: The received frame is a WDS frame. */
 #define  FLG0_RXFRAME_QOS	1 /* bit1: The received frame is a QoS Data frame. */
-
-/* Registers used by the stack implementation only. */
-#define R_STACK_POINTER		r35
-#define R_STACK_SCRATCH0	r36
-#define R_STACK_SCRATCH1	r37
 
 /* General purpose registers (r38 - r63) */
 #define Ra	r38 /* Caller-saved. Any function can clobber this without saving. */
@@ -58,6 +56,16 @@
 #define R_MARKER_ID		r2
 #define R_MARKER_LINE		r3
 #define R_PANIC_REASON		r3
+
+
+
+/* --- Offset register definitions --- */
+
+/* Offset register 8 is the stack pointer and must _only_ be
+ * used inside of the stack helpers POP and PUSH. */
+#define OFFR_STACKPTR		off6
+#define BASER_STACKPTR		SPR_BASE6
+
 
 #endif /* GENERAL_PURPOSE_REGISTERS_H_ */
 
