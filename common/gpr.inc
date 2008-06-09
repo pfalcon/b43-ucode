@@ -61,7 +61,7 @@
 
 /* --- Offset register definitions --- */
 
-/* Offset register 8 is the stack pointer and must _only_ be
+/* Offset register 6 is the stack pointer and must _only_ be
  * used inside of the stack helpers POP and PUSH. */
 #define OFFR_STACKPTR		off6
 #define BASER_STACKPTR		SPR_BASE6

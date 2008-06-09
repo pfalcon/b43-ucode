@@ -12,8 +12,10 @@
 #define HOST_SHM_RCMTA		4
 
 
-/* Macro to convert a host-SHM-offset to a microcode-SHM-offset */
-#define SHM(offset)		((offset) / 2)
+/* Macro to convert a host-SHM-offset to a microcode-SHM-offset.
+ * This also asserts that the address is a word aligned. */
+#define SHM(offset)		(((offset) / 2) +		\
+				 (%assert((offset & 1) == 0)))
 
 /* Misc variables */
 #define SHM_WLCOREREV		SHM(0x016) /* 802.11 core revision */
