@@ -13,7 +13,7 @@
 
 
 /* Macro to convert a host-SHM-offset to a microcode-SHM-offset.
- * This also asserts that the address is a word aligned. */
+ * This also asserts that the address is word aligned. */
 #define SHM(offset)		(((offset) / 2) +		\
 				 (%assert((offset & 1) == 0)))
 

@@ -22,6 +22,13 @@
 #define PHY_EXTG(reg)			((reg) | PHYROUTE_EXT_GPHY)
 
 
+/* OFDM A-PHY registers */
+#define APHY_PACKCNT			PHY_OFDM(0x5F)
+
+/* CCK B-PHY registers */
+#define BPHY_CHANINFO			PHY_CCK(0x08)
+#define BPHY_JSSI			PHY_CCK(0x27)
+
 /* Extended G-PHY registers */
 #define GPHY_CLASSCTL			PHY_EXTG(0x02) /* Classify control */
 #define  GPHY_CLASSCTL_CCK		0 /* bit0: CCK */

@@ -210,7 +210,7 @@ update_gphy_classify_ctl:
 
 /* --- Handler: Do some channel setup --- */
 h_channel_setup:
-	call lr0, create_bg_noise_sample
+//FIXME notyet	call lr0, create_bg_noise_sample
 //	MARKER(0)
 	jmp eventloop_restart
 
@@ -370,7 +370,7 @@ h_received_valid_plcp:
 	mov SPR_RXE_PHYRXSTAT2, [SHM_RXHDR_PHYSTAT2]
 	mov SPR_RXE_PHYRXSTAT3, [SHM_RXHDR_PHYSTAT3]
 	mov [SHM_RX_TSF0], [SHM_RXHDR_TIME]
-	mov 0x008, Ra
+	mov BPHY_CHANINFO, Ra
 	call lr0, phy_read
 	sl Ra, 3, Ra
 	or Ra, [SHM_PHYTYPE], [SHM_RXHDR_CHAN]
@@ -463,6 +463,10 @@ put_rx_frame_into_fifo:
  * The Data is returned in Ra.
  */
 phy_read:
+	jnzx 0, MACCTL_GMODE, SPR_MAC_CTLHI, 0, is_gmode+
+	/* In non-GMode we must clear the OFDM (A-PHY) routing bit. */
+	orx 0, 10, 0, Ra, Ra
+ is_gmode:
  busy:	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
 	orx 0, 12, 1, Ra, SPR_Ext_IHR_Address
  busy:	jnzx 0, 12, SPR_Ext_IHR_Address, 0, busy-
@@ -475,6 +479,10 @@ phy_read:
  * The Data to write is passed in Rb.
  */
 phy_write:
+	jnzx 0, MACCTL_GMODE, SPR_MAC_CTLHI, 0, is_gmode+
+	/* In non-GMode we must clear the OFDM (A-PHY) routing bit. */
+	orx 0, 10, 0, Ra, Ra
+ is_gmode:
  busy:	jnzx 0, 14, SPR_Ext_IHR_Address, 0, busy-
 	mov Rb, SPR_Ext_IHR_Data
 	orx 0, 13, 1, Ra, SPR_Ext_IHR_Address
@@ -541,30 +549,89 @@ radio_write:
  */
 create_bg_noise_sample:
 	PUSH(SPR_PC0)
+	PUSH(Ri)
+	PUSH(Rj)
 	jzx 0, MACCMD_BGNOISE, SPR_MAC_CMD, 0, out+
-	/* TODO: What do do here:
-	 * First we read the JSSI_AUX from phy register 0x8. This is the lower 8bit.
-	 * Then we read OFDM PHY register 0x5F (PHY PACK CNT). This is the upper 8bit of the JSSI_AUX.
-	 * If this is an A-PHY, we need to save and setup PHY/radio registers: TODO
-	 * For the B/G PHY we read the noise samples from PHY register BPHY_JSSI.
-	 * Before reading the JSSI PHY register, wait 2 microseconds. In these 2 uS
-	 * check whether we want to transmit something. If TX is pending, cancel
-	 * this measuring round and return later. Also check (IFS_STAT & 0x800). If that
-	 * gets set within the 2 microseconds and we started the whole measurement less
-	 * than 130 milliseconds ago, return and redo this later.
-	 * Read the sample from the PHY register and put it into the next free SHM location.
-	 * TODO: The APHY sample is special.
-	 * Repeat the whole thing (including the TX check) 4 times to fill all 4 samples.
-	 * If the whole measurement process took less than 130 milliseconds, do this:
-	 *	Wait for 24 microseconds. If within these 24 microseconds we receive a
-	 *	TX request of (IFS_STAT & 0x800) is set, we interrupt the measurement
-	 *	and return and recreate it later.
-	 * We successfully generated 4 noise samples. Clear the noise-sample-request bit
-	 * and send an interrupt to the driver.
-	 * Before returning from the function, clean up any APHY register, if needed.
-	 */
-//TODO
+	jnzx 0, BGN_INPROGRESS, [SHM_BGN_STATUS], 0, already_running+
+	/* The noise sample generation just started. Save the time
+	 * so we can later check how long this took. Save word 1. That
+	 * means every increment is about 66 milliseconds. */
+	mov SPR_TSF_WORD0, 0 /* First need to read word 0 */
+	mov SPR_TSF_WORD1, [SHM_BGN_START_TSF1]
+ already_running:
+	/* Check how long the noise sample generation was already running. */
+	add [SHM_BGN_START_TSF1], 2, Ra /* Ra = StartTime + about 131 mSec */
+	mov SPR_TSF_WORD0, 0 /* First need to read word 0 */
+	sub SPR_TSF_WORD1, Ra, Ra /* Ra = NOW - (StartTime + 131 mS) */
+	mov 0, Ri
+	jls Ra, 0, no_timeout+
+	/* The noise sample calculation took more than 131 milliseconds.
+	 * We check Ri later in the busyloops to shorten the calculations. */
+	mov 1, Ri
+ no_timeout:
+ 	/* Read channel info and put it into the lower 8bit of SHM_JSSIAUX */
+	mov BPHY_CHANINFO, Ra
+	call lr0, phy_read
+	and Ra, 0xFF, [SHM_JSSIAUX]
+	/* Get packet count and put it into the upper 8bit of SHM_JSSIAUX */
+	mov APHY_PACKCNT, Ra
+	call lr0, phy_read
+	orx 7, 8, Ra, [SHM_JSSIAUX], [SHM_JSSIAUX]
+	// TODO: Setup A-PHY registers, if we are on an A-PHY
+
+	mov 0, Rj /* Measurement counter */
+ bgn_measure_loop:
+	/* Wait for the channel to calm down so we only measure the noise.
+	 * We wait for 2 microseconds. */
+	add SPR_TSF_WORD0, 2, Ra
+ wait_calmdown:
+	jzx 0, 11, SPR_IFS_STAT, 0, ifs_0x800_not_set+
+	/* If we still have some time left, cancel this round and
+	 * redo the measurement later. */
+	je Ri, 0, out_restore+
+ ifs_0x800_not_set:
+	/* Transmission pending. Redo measurement later. */
+	jext COND_TX_NOW, out_restore+
+	jne SPR_TSF_WORD0, Ra, wait_calmdown- //FIXME we should check for NOW = Ra or later here. Not trivial with wrapping.
+
+	/* Ok, channel is empty. Read the JSSI. It will represent the channel
+	 * noise now. */
+	mov BPHY_JSSI, Ra
+	call lr0, phy_read
+	srx 0, 1, Rj, 0, Rb /* bit 1 of the counter decides whether to put JSSI0 or JSSI1 */
+	add Rb, SHM_JSSI0, SPR_BASE0
+	/* bit 0 of the counter decides whether to put into low or high 8bits */
+	jzx 0, 0, Rj, 0, low+
+	orx 7, 8, Ra, [0, off0], [0, off0] /* Put into high nibble */
+	jmp no_low+
+ low:
+	orx 7, 0, Ra, [0, off0], [0, off0] /* Put into low nibble */
+ no_low:
+
+	add Rj, 1, Rj /* Increment the counter */
+	jne Rj, 4, bgn_measure_loop- /* Do it 4 times */
+
+	/* Ok, done. Got the 4 samples. If we took less than 131 mS of time
+	 * for the whole thing, we wait an additional grace period to make
+	 * sure the channel really was quiet while measuring. */
+	je Ri, 1, bgn_measure_done+
+	add SPR_TSF_WORD0, 24, Ra
+ bgn_grace_period:
+	jext COND_TX_NOW, out_restore+ /* Damn..., redo it later */
+	jnzx 0, 11, SPR_IFS_STAT, 0, out_restore+ /* Retry later */
+	jne SPR_TSF_WORD0, Ra, bgn_grace_period- //FIXME we should check for NOW = Ra or later here. Not trivial with wrapping.
+ bgn_measure_done:
+
+	/* Tell the kernel driver that 4 fresh noise samples are available */
+	mov (1 << MACCMD_BGNOISE), SPR_MAC_CMD /* write clears bit */
+	orx 0, BGN_INPROGRESS, 0, [SHM_BGN_STATUS], [SHM_BGN_STATUS] /* clear */
+	mov IRQHI_NOISESAMPLE_OK, SPR_MAC_IRQHI /* send interrupt */
+
+ out_restore:
+	// TODO: Restore the A-PHY registers
  out:
+	PUSH(Rj)
+	PUSH(Ri)
 	POP(SPR_PC0)
 	ret lr0, lr0
 
