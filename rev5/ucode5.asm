@@ -210,7 +210,7 @@ update_gphy_classify_ctl:
 
 /* --- Handler: Do some channel setup --- */
 h_channel_setup:
-//FIXME notyet	call lr0, create_bg_noise_sample
+	call lr0, create_bg_noise_sample
 //	MARKER(0)
 	jmp eventloop_restart
 
@@ -553,6 +553,7 @@ create_bg_noise_sample:
 	PUSH(Rj)
 	jzx 0, MACCMD_BGNOISE, SPR_MAC_CMD, 0, out+
 	jnzx 0, BGN_INPROGRESS, [SHM_BGN_STATUS], 0, already_running+
+	orx 0, BGN_INPROGRESS, 1, [SHM_BGN_STATUS], [SHM_BGN_STATUS] /* set */
 	/* The noise sample generation just started. Save the time
 	 * so we can later check how long this took. Save word 1. That
 	 * means every increment is about 66 milliseconds. */
@@ -581,6 +582,7 @@ create_bg_noise_sample:
 
 	mov 0, Rj /* Measurement counter */
  bgn_measure_loop:
+jmp skip+// FIXME FIXME skip the wait block for now
 	/* Wait for the channel to calm down so we only measure the noise.
 	 * We wait for 2 microseconds. */
 	add SPR_TSF_WORD0, 2, Ra
@@ -593,6 +595,7 @@ create_bg_noise_sample:
 	/* Transmission pending. Redo measurement later. */
 	jext COND_TX_NOW, out_restore+
 	jne SPR_TSF_WORD0, Ra, wait_calmdown- //FIXME we should check for NOW = Ra or later here. Not trivial with wrapping.
+skip:
 
 	/* Ok, channel is empty. Read the JSSI. It will represent the channel
 	 * noise now. */
@@ -611,6 +614,7 @@ create_bg_noise_sample:
 	add Rj, 1, Rj /* Increment the counter */
 	jne Rj, 4, bgn_measure_loop- /* Do it 4 times */
 
+jmp skip+// FIXME FIXME skip the wait block for now
 	/* Ok, done. Got the 4 samples. If we took less than 131 mS of time
 	 * for the whole thing, we wait an additional grace period to make
 	 * sure the channel really was quiet while measuring. */
@@ -621,6 +625,7 @@ create_bg_noise_sample:
 	jnzx 0, 11, SPR_IFS_STAT, 0, out_restore+ /* Retry later */
 	jne SPR_TSF_WORD0, Ra, bgn_grace_period- //FIXME we should check for NOW = Ra or later here. Not trivial with wrapping.
  bgn_measure_done:
+skip:
 
 	/* Tell the kernel driver that 4 fresh noise samples are available */
 	mov (1 << MACCMD_BGNOISE), SPR_MAC_CMD /* write clears bit */
@@ -630,8 +635,8 @@ create_bg_noise_sample:
  out_restore:
 	// TODO: Restore the A-PHY registers
  out:
-	PUSH(Rj)
-	PUSH(Ri)
+	POP(Rj)
+	POP(Ri)
 	POP(SPR_PC0)
 	ret lr0, lr0
 
