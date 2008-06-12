@@ -582,7 +582,6 @@ create_bg_noise_sample:
 
 	mov 0, Rj /* Measurement counter */
  bgn_measure_loop:
-jmp skip+// FIXME FIXME skip the wait block for now
 	/* Wait for the channel to calm down so we only measure the noise.
 	 * We wait for 2 microseconds. */
 	add SPR_TSF_WORD0, 2, Ra
@@ -595,7 +594,6 @@ jmp skip+// FIXME FIXME skip the wait block for now
 	/* Transmission pending. Redo measurement later. */
 	jext COND_TX_NOW, out_restore+
 	jne SPR_TSF_WORD0, Ra, wait_calmdown- //FIXME we should check for NOW = Ra or later here. Not trivial with wrapping.
-skip:
 
 	/* Ok, channel is empty. Read the JSSI. It will represent the channel
 	 * noise now. */
@@ -605,16 +603,15 @@ skip:
 	add Rb, SHM_JSSI0, SPR_BASE0
 	/* bit 0 of the counter decides whether to put into low or high 8bits */
 	jzx 0, 0, Rj, 0, low+
-	orx 7, 8, Ra, [0, off0], [0, off0] /* Put into high nibble */
+	orx 7, 8, Ra, [0, off0], [0, off0] /* Put into high byte */
 	jmp no_low+
  low:
-	orx 7, 0, Ra, [0, off0], [0, off0] /* Put into low nibble */
+	orx 7, 0, Ra, [0, off0], [0, off0] /* Put into low byte */
  no_low:
 
 	add Rj, 1, Rj /* Increment the counter */
 	jne Rj, 4, bgn_measure_loop- /* Do it 4 times */
 
-jmp skip+// FIXME FIXME skip the wait block for now
 	/* Ok, done. Got the 4 samples. If we took less than 131 mS of time
 	 * for the whole thing, we wait an additional grace period to make
 	 * sure the channel really was quiet while measuring. */
@@ -625,7 +622,6 @@ jmp skip+// FIXME FIXME skip the wait block for now
 	jnzx 0, 11, SPR_IFS_STAT, 0, out_restore+ /* Retry later */
 	jne SPR_TSF_WORD0, Ra, bgn_grace_period- //FIXME we should check for NOW = Ra or later here. Not trivial with wrapping.
  bgn_measure_done:
-skip:
 
 	/* Tell the kernel driver that 4 fresh noise samples are available */
 	mov (1 << MACCMD_BGNOISE), SPR_MAC_CMD /* write clears bit */
