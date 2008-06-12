@@ -190,7 +190,7 @@ eventloop_idle:
  * Link Register: lr0
  */
 gphy_classify_ctl_ofdm:
-	PUSH(SPR_PC0)
+	PUSH_LR0
 	and [SHM_GCLASSCTL], (~(1 << GPHY_CLASSCTL_CCK)), Rb
 	jmp _write_gclassctl
 
@@ -198,14 +198,14 @@ gphy_classify_ctl_ofdm:
  * Link Register: lr0
  */
 update_gphy_classify_ctl:
-	PUSH(SPR_PC0)
+	PUSH_LR0
 	mov [SHM_GCLASSCTL], Rb
  _write_gclassctl: /* jump from gphy_classify_ctl_ofdm() */
 	jne [SHM_PHYTYPE], PHYTYPE_G, out+
 	mov GPHY_CLASSCTL, Ra
 	call lr0, phy_write
  out:
-	POP(SPR_PC0)
+	POP_LR0
 	ret lr0, lr0
 
 /* --- Handler: Do some channel setup --- */
@@ -508,7 +508,7 @@ phy_write_noflush:
  * The Data is returned in Ra
  */
 radio_read:
-	PUSH(SPR_PC0)
+	PUSH_LR0
 	mov Ra, Rb	/* Rb = radio address */
 	mov 0, Ra
 	jnzx 0, MACCTL_RADIOLOCK, SPR_MAC_CTLHI, 0, out+
@@ -519,7 +519,7 @@ radio_read:
  out:
 	/* The radio register content (or zero, if the
 	 * radio was locked) is in Ra */
-	POP(SPR_PC0)
+	POP_LR0
 	ret lr0, lr0
 
 /* --- Function: Write to a Radio register ---
@@ -528,7 +528,7 @@ radio_read:
  * The Data to write is passed in Rb
  */
 radio_write:
-	PUSH(SPR_PC0)
+	PUSH_LR0
 	jnzx 0, MACCTL_RADIOLOCK, SPR_MAC_CTLHI, 0, out+
 	mov Ra, Rc	/* Rc = Radio address */
 	mov Rb, Rd	/* Rd = data */
@@ -540,7 +540,7 @@ radio_write:
 	mov Rd, Rb
 	call lr0, phy_write_noflush
  out:
-	POP(SPR_PC0)
+	POP_LR0
 	ret lr0, lr0
 
 /* --- Function: Create another background noise sample and put it into SHM ---
@@ -548,7 +548,7 @@ radio_write:
  * This function takes no parameters and returns nothing.
  */
 create_bg_noise_sample:
-	PUSH(SPR_PC0)
+	PUSH_LR0
 	PUSH(Ri)
 	PUSH(Rj)
 	jzx 0, MACCMD_BGNOISE, SPR_MAC_CMD, 0, out+
@@ -637,7 +637,7 @@ skip:
  out:
 	POP(Rj)
 	POP(Ri)
-	POP(SPR_PC0)
+	POP_LR0
 	ret lr0, lr0
 
 /* --- Function: Lowlevel panic helper --- 
