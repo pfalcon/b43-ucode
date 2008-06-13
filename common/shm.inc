@@ -29,7 +29,7 @@
 #define  SHM_HF_LO_SYMW		1 /* bit1: G-PHY SYM workaround */
 #define  SHM_HF_LO_RXPULLW	2 /* bit2: RX pullup workaround */
 #define  SHM_HF_LO_CCKBOOST	3 /* bit3: 4dB CCK power boost (exclusive with OFDM boost) */
-#define  SHM_HF_LO_BTCOEX	4 /* bit4: Bluetooth coexistance */
+#define  SHM_HF_LO_BTCOEX	4 /* bit4: Bluetooth coexistence */
 #define  SHM_HF_LO_GDCW		5 /* bit5: G-PHY DC canceller filter bw workaround */
 #define  SHM_HF_LO_OFDMPABOOST	6 /* bit6: Enable PA gain boost for OFDM */
 #define  SHM_HF_LO_ACPR		7 /* bit7: Disable for Japan, channel 14 */
@@ -43,14 +43,14 @@
 #define  SHM_HF_LO_USEDEFKEYS	14 /* bit14: Enable use of default keys */
 #define  SHM_HF_LO_AFTERBURNER	15 /* bit15: Afterburner enabled */
 #define SHM_HF_MI		SHM(0x060) /* Hostflags for ucode options (middle) */
-#define  SHM_HF_MI_BT4PRIOCOEX	0 /* bit0: Bluetooth 4-priority coexistance */
+#define  SHM_HF_MI_BT4PRIOCOEX	0 /* bit0: Bluetooth 4-priority coexistence */
 #define  SHM_HF_MI_FWKUP	1 /* bit1: Fast wake-up ucode */
 #define  SHM_HF_MI_VCORECALC	2 /* bit2: Force VCO recalculation when powering up synthpu */
 #define  SHM_HF_MI_PCISCW	3 /* bit3: PCI slow clock workaround */
 #define  SHM_HF_MI_4318TSSI	5 /* bit5: 4318 TSSI */
 #define  SHM_HF_MI_FBCMCFIFO	6 /* bit6: Flush bcast/mcast FIFO immediately */
-#define  SHM_HF_MI_HWPCTL	7 /* bit7: Enable hardwarre power control */
-#define  SHM_HF_MI_BTCOEXALT	8 /* bit8: Bluetooth coexistance in alternate pins */
+#define  SHM_HF_MI_HWPCTL	7 /* bit7: Enable hardware power control */
+#define  SHM_HF_MI_BTCOEXALT	8 /* bit8: Bluetooth coexistence in alternate pins */
 #define  SHM_HF_MI_TXBTCHECK	9 /* bit9: Bluetooth check during transmission */
 #define  SHM_HF_MI_SKCFPUP	10 /* bit10: Skip CFP update */
 #define  SHM_HF_MI_N40W		11 /* bit11: N PHY 40 MHz workaround (rev >= 13 only) */

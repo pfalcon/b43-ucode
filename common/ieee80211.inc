@@ -2,7 +2,7 @@
 #define IEEE80211_DEFINITIONS_H_
 
 /* Some IEEE 802.11 definitions in this file are derived from the linux kernel
- * inlude/linux/ieee80211.h file and are covered by the following copyrights.
+ * include/linux/ieee80211.h file and are covered by the following copyrights.
  *
  * Copyright (c) 2001-2002, SSH Communications Security Corp and Jouni Malinen
  * Copyright (c) 2002-2003, Jouni Malinen
@@ -52,7 +52,7 @@
 #define FTYPE_CTL			(0x0004 >> FCTL_FTYPE_S)
 #define FTYPE_DATA			(0x0008 >> FCTL_FTYPE_S)
 
-/* Management frame substypes (rightshifted!) */
+/* Management frame subtypes (rightshifted!) */
 #define STYPE_ASSOC_REQ			(0x0000 >> FCTL_STYPE_S)
 #define STYPE_ASSOC_RESP		(0x0010 >> FCTL_STYPE_S)
 #define STYPE_REASSOC_REQ		(0x0020 >> FCTL_STYPE_S)

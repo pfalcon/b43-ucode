@@ -305,7 +305,7 @@
 #define SPR_TSF_0x44				spr122
 #define SPR_TSF_GPT0_STAT			spr123
 #define  GPT_STAT_EN				15 /* bit15: Enable the timer */
-#define  GPT_STAT_8MHZ				14 /* bit14: Use 8MHz base (otherwise 88Mhz) */
+#define  GPT_STAT_8MHZ				14 /* bit14: Use 8MHz base (otherwise 88MHz) */
 #define SPR_TSF_GPT1_STAT			spr124
 #define SPR_TSF_GPT0_CNTLO			spr125
 #define SPR_TSF_GPT1_CNTLO			spr126

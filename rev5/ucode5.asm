@@ -169,7 +169,7 @@ check_events:
 	jnext COND_4_C7, h_channel_setup
 	extcond_eoi_only(COND_PHY6)
 
-	/* Ok, all done. Go idle for a while... */
+	/* OK, all done. Go idle for a while... */
 
 eventloop_idle:
 	mov 0, R_WATCHDOG
@@ -470,7 +470,7 @@ h_rx_complete_handler:
  * Link Register: lr0
  * The result is returned in Ra:
  *   Ra == 0 -> OK
- *   Ra == 1 -> Fifo overflow
+ *   Ra == 1 -> FIFO overflow
  */
 put_rx_frame_into_fifo:
 	mov SHM_RXHDR, SPR_RXE_RXHDR_OFFSET
@@ -630,7 +630,7 @@ create_bg_noise_sample:
 	jext COND_TX_NOW, out_restore+
 	jne SPR_TSF_WORD0, Ra, wait_calmdown- //FIXME we should check for NOW = Ra or later here. Not trivial with wrapping.
 
-	/* Ok, channel is empty. Read the JSSI. It will represent the channel
+	/* OK, channel is empty. Read the JSSI. It will represent the channel
 	 * noise now. */
 	mov BPHY_JSSI, Ra
 	call lr0, phy_read
@@ -647,7 +647,7 @@ create_bg_noise_sample:
 	add Rj, 1, Rj /* Increment the counter */
 	jne Rj, 4, bgn_measure_loop- /* Do it 4 times */
 
-	/* Ok, done. Got the 4 samples. If we took less than 131 mS of time
+	/* OK, done. Got the 4 samples. If we took less than 131 mS of time
 	 * for the whole thing, we wait an additional grace period to make
 	 * sure the channel really was quiet while measuring. */
 	je Ri, 1, bgn_measure_done+
