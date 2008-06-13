@@ -246,7 +246,30 @@ update_gphy_classify_ctl:
 h_channel_setup:
 	call lr0, create_bg_noise_sample
 	call lr0, cca_indication_check
-//	MARKER(0)
+	jext COND_4_C4, skip_beacon_updates+
+	jext COND_TX_TBTTEXPIRE, h_beacon_tbtt_updates
+	js (MACCMD_BEAC0 | MACCMD_BEAC1), SPR_MAC_CMD, h_flag_bcn_tmpl_update
+ skip_beacon_updates:
+	jext EOI(COND_RX_ATIMWINEND), h_atim_win_end
+	//TODO
+	jmp eventloop_restart
+
+/* --- Handler: Do some beacon and TBTT related updates --- */
+h_beacon_tbtt_updates:
+	MARKER(0)
+	//TODO
+	jmp eventloop_idle
+
+/* --- Handler: Tell the kernel driver that it's safe to update the beacon --- */
+h_flag_bcn_tmpl_update:
+	MARKER(0)
+	//TODO
+	jmp eventloop_idle
+
+/* --- Handler: Signal ATIM window end --- */
+h_atim_win_end:
+	MARKER(0)
+	//TODO
 	jmp eventloop_restart
 
 /* --- Handler: Transmit another frame --- */
