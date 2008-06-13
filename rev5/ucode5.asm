@@ -245,6 +245,7 @@ update_gphy_classify_ctl:
 /* --- Handler: Do some channel setup --- */
 h_channel_setup:
 	call lr0, create_bg_noise_sample
+	call lr0, cca_indication_check
 //	MARKER(0)
 	jmp eventloop_restart
 
@@ -668,6 +669,21 @@ create_bg_noise_sample:
 	POP(Rj)
 	POP(Ri)
 	POP_LR0
+	ret lr0, lr0
+
+/* --- Function: PHY Clear Channel Assessment indication
+ * As specified by IEEE 802.11-2007 12.3.5.10
+ * The function is supposed to get called frequently. It will
+ * trigger the CCA interrupt when the CCA indicates an idle channel.
+ * Link Register: lr0
+ */
+cca_indication_check:
+	jzx 0, MACCMD_CCA, SPR_MAC_CMD, 0, out+ /* CCA was not requested. */
+	/* TODO: Check whether the channel was empty for some
+	 * time and trigger the CCA interrupt */
+	MARKER(0)
+	mov (1 << MACCMD_CCA), SPR_MAC_CMD
+ out:
 	ret lr0, lr0
 
 /* --- Function: Lowlevel panic helper --- 
