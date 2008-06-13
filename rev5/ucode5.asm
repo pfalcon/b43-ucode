@@ -100,7 +100,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov hi16(280000), SPR_TSF_GPT0_CNTHI
 
 /* -- The MAC suspend loop -- */
- sleep:
+mac_suspend_now:
 	mov SHM_UCODESTAT_SUSP, [SHM_UCODESTAT]
 	mov IRQLO_MAC_SUSPENDED, SPR_MAC_IRQLO
 	orx 0, GPT_STAT_EN, 0, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GP Timer 0: disable */
@@ -141,13 +141,14 @@ eventloop_restart:
 	mov lo16(280000), SPR_TSF_GPT0_VALLO	/* GP Timer 0: Value = 280,000 */
 	mov hi16(280000), SPR_TSF_GPT0_VALHI
 	orx 1, 14, 0x3, SPR_TSF_GPT0_STAT, SPR_TSF_GPT0_STAT /* GPT0: Start and 8MHz */
-	jnext COND_MACEN, sleep			/* Driver disabled the MAC? Go to sleep. */
+	jnext COND_MACEN, h_might_suspend_mac	/* Driver disabled MAC. Check if we can sleep. */
 
 	jnext COND_TX_FLUSH, no_txflush+
 	MARKER(0) /* TODO: handle TX flush request */
  no_txflush:
 
 	/* Check if there's some real work to be done. */
+check_events:
 	jext EOI(COND_TX_NOW), h_transmit_frame
 	jext EOI(COND_TX_POWER), h_tx_power_updates
 	jext EOI(COND_TX_UNDERFLOW), h_tx_underflow
@@ -185,6 +186,39 @@ eventloop_idle:
 	mov 0xFFFF, SPR_MAC_MAX_NAP
 	nap						/* .oO( ZzzzZZZzzz..... ) */
 	jmp eventloop_restart
+
+/* --- Handler: Check if we can suspend now. --- */
+h_might_suspend_mac:
+	jnand SPR_BRC, 0xE2, check_events	/* Cannot sleep now. There's work to do. */
+	jext COND_TX_PHYERR, check_events	/* First need to handle the PHY error */
+	call lr0, tx_engine_stop
+	jext EOI(COND_TX_NOW), h_transmit_frame	/* Transmit pending. Cannot sleep. */
+	jmp mac_suspend_now
+
+/* --- Function: Stop the TX engine. ---
+ * This stops the TXE, but also checks first if there's TX work
+ * to do. In case there's work to do it will interrupt and return early!
+ * So check (and possibly EOI) the TX_NOW condition after calling this.
+ * Link Register: lr0
+ */
+tx_engine_stop:
+	mov (1 << TXE_CTL_FCS), SPR_TXE0_CTL
+	flush_spr_write_cache(SPR_TXE0_CTL)
+	jext COND_TX_NOW, out+
+	and SPR_BRC, (~0x27), SPR_BRC
+	mov 0, SPR_TXE0_SELECT
+	orx 0, 15, 0, SPR_TXE0_TIMEOUT, SPR_TXE0_TIMEOUT /* clear bit 15 */
+	and SPR_BRC, (~0x10), SPR_BRC
+	jzx 0, FLG0_EOI_TXECOND, R_FLAGS0, 0, no_clear_conditions+
+ wait:	jnext EOI(COND_TX_POWER), wait- /* Wait to trigger once */
+	extcond_eoi_only(COND_TX_UNDERFLOW)
+ no_clear_conditions:
+	jnzx 0, 9, SPR_WEP_CTL, 0, no_reset_crypto+ /* test 0x200 */
+	mov 0x200, SPR_WEP_CTL
+ no_reset_crypto:
+	and R_FLAGS0, (~(1 << FLG0_EOI_TXECOND)), R_FLAGS0 /* FIXME: also clear another flag */
+ out:
+	ret lr0, lr0
 
 /* --- Function: Set GPHY classify control to OFDM-only
  * Link Register: lr0

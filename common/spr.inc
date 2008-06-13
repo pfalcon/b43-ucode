@@ -140,6 +140,7 @@
 #define SPR_PSM_0x7c				spr07e
 #define SPR_PSM_0x7e				spr07f
 #define SPR_TXE0_CTL				spr080
+#define  TXE_CTL_FCS				14 /* bit14: Generate the FCS */
 #define SPR_TXE0_AUX				spr081
 #define SPR_TXE0_TS_LOC				spr082
 #define SPR_TXE0_TIMEOUT			spr083
@@ -171,11 +172,11 @@
 #define SPR_TXE0_0x3a				spr09d
 #define SPR_TXE0_0x3c				spr09e
 #define SPR_TXE0_0x3e				spr09f
-#define SPR_TXE0_FIFO_Command			spr0a0
-#define SPR_TXE0_FIFO_Flush			spr0a1
-#define SPR_TXE0_FIFO_Threshold			spr0a2
-#define SPR_TXE0_FIFO_Ready			spr0a3
-#define SPR_TXE0_FIFO_PRI_Ready			spr0a4
+#define SPR_TXE0_FIFO_CMD			spr0a0
+#define SPR_TXE0_FIFO_FLUSH			spr0a1
+#define SPR_TXE0_FIFO_THRES			spr0a2
+#define SPR_TXE0_FIFO_RDY			spr0a3
+#define SPR_TXE0_FIFO_PRI_RDY			spr0a4
 #define SPR_TXE0_FIFO_RQ_PRI			spr0a5
 #define SPR_TXE0_Template_TX_Pointer		spr0a6
 #define SPR_TXE0_0x4e				spr0a7
@@ -191,7 +192,7 @@
 #define SPR_TXE0_Template_Data_High		spr0b1
 #define SPR_TXE0_0x64				spr0b2
 #define SPR_TXE0_0x66				spr0b3
-#define SPR_TXE0_Select				spr0b4
+#define SPR_TXE0_SELECT				spr0b4
 #define SPR_TXE0_TX_Count			spr0b5
 #define SPR_TXE0_TX_Shared_Memory_Address	spr0b6
 #define SPR_TXE0_0x6e				spr0b7

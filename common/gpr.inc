@@ -23,6 +23,7 @@
 #define R_FLAGS0		r34
 #define  FLG0_RXFRAME_WDS	0 /* bit0: The received frame is a WDS frame. */
 #define  FLG0_RXFRAME_QOS	1 /* bit1: The received frame is a QoS Data frame. */
+#define  FLG0_EOI_TXECOND	2 /* bit2: EOI the TXE conditions in TXE_stop. */
 
 /* General purpose registers (r38 - r63) */
 #define Ra	r38 /* Caller-saved. Any function can clobber this without saving. */
