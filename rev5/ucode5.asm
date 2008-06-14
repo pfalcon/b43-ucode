@@ -256,13 +256,13 @@ h_channel_setup:
 	jmp eventloop_restart
 
 h_tx_engine_prepare:
-	MARKER(0)
+//	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
 /* --- Handler: Do some beacon and TBTT related updates --- */
 h_beacon_tbtt_updates:
-	MARKER(0)
+//	MARKER(0)
 	//TODO
 	jmp eventloop_idle
 
