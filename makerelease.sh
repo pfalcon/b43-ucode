@@ -18,13 +18,23 @@ function build
 		exit 1
 	fi
 
-	echo "building firmware $dir"
+	echo "building release firmware $dir"
 	mkdir -p bin/$dir
+	old_dir="$PWD"
 	cd $dir
-	make
+	make DEBUG=0
 	cp *.fw ../bin/$dir/
 	make clean
-	cd ..
+	cd "$old_dir"
+
+	echo "building debugging firmware $dir"
+	mkdir -p bin-debug/$dir
+	old_dir="$PWD"
+	cd $dir
+	make DEBUG=1
+	cp *.fw ../bin-debug/$dir/
+	make clean
+	cd "$old_dir"
 }
 
 version=$1
