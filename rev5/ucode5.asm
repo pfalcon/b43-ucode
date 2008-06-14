@@ -251,8 +251,14 @@ h_channel_setup:
 	js (MACCMD_BEAC0 | MACCMD_BEAC1), SPR_MAC_CMD, h_flag_bcn_tmpl_update
  skip_beacon_updates:
 	jext EOI(COND_RX_ATIMWINEND), h_atim_win_end
+	jzx 0, TXE_CTL_BIT0, SPR_TXE0_CTL, 0, h_tx_engine_prepare
 	//TODO
 	jmp eventloop_restart
+
+h_tx_engine_prepare:
+	MARKER(0)
+	//TODO
+	jmp eventloop_idle
 
 /* --- Handler: Do some beacon and TBTT related updates --- */
 h_beacon_tbtt_updates:

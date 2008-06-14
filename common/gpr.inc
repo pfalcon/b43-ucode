@@ -62,10 +62,10 @@
 
 /* --- Offset register definitions --- */
 
-/* Offset register 6 is the stack pointer and must _only_ be
+/* Offset register 5 is the stack pointer and must _only_ be
  * used inside of the stack helpers POP and PUSH. */
-#define OFFR_STACKPTR		off6
-#define BASER_STACKPTR		SPR_BASE6
+#define OFFR_STACKPTR		off5
+#define BASER_STACKPTR		SPR_BASE5
 
 
 #endif /* GENERAL_PURPOSE_REGISTERS_H_ */

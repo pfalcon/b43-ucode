@@ -113,7 +113,7 @@
 #define SPR_BASE3				spr063 /* Offset Register 3 */
 #define SPR_BASE4				spr064 /* Offset Register 4 */
 #define SPR_BASE5				spr065 /* Offset Register 5 */
-#define SPR_BASE6				spr066 /* Offset Register 6 */
+#define SPR_BASE6				spr066 /* Do not use. It's broken! */
 #define SPR_PSM_0x4e				spr067
 #define SPR_PC0					spr068 /* Link Register 0 */
 #define SPR_PC1					spr069 /* Link Register 1 */
@@ -140,6 +140,7 @@
 #define SPR_PSM_0x7c				spr07e
 #define SPR_PSM_0x7e				spr07f
 #define SPR_TXE0_CTL				spr080
+#define  TXE_CTL_BIT0				0 /* bit0: FIXME unknown meaning */
 #define  TXE_CTL_FCS				14 /* bit14: Generate the FCS */
 #define SPR_TXE0_AUX				spr081
 #define SPR_TXE0_TS_LOC				spr082
