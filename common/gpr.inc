@@ -67,6 +67,11 @@
 #define OFFR_STACKPTR		off5
 #define BASER_STACKPTR		SPR_BASE5
 
+/* This offset register points to the current TX-header information
+ * while a transmission is going on. */
+#define OFFR_TXHDR		off4
+#define BASER_TXHDR		SPR_BASE4
+
 
 #endif /* GENERAL_PURPOSE_REGISTERS_H_ */
 

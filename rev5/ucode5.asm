@@ -715,6 +715,29 @@ cca_indication_check:
  out:
 	ret lr0, lr0
 
+/* --- Function: Load current TX header into SHM
+ * This will make OFFR_TXHDR point to the current TX header in SHM
+ * and load the header data into the SHM.
+ * Link Register: lr0
+ */
+load_txhdr_to_shm:
+	sr [SHM_CUR_TXFIFO], CUR_TXFIFO_SHIFT, Ra	/* Ra = current TX FIFO */
+	/* Lookup the table to get a pointer to the TXHDR scratch memory */
+	mov SHM_TXHDR_LT, BASER_TXHDR
+	add BASER_TXHDR, Ra, BASER_TXHDR		/* Table lookup */
+	mov [0, OFFR_TXHDR], BASER_TXHDR		/* OFFR_TXHDR = pointer to TXHDR-mem */
+
+	/* Now read the TX header data from the FIFO into SHM */
+	orx 0, TXE_FIFO_CMD_COPY, 1, [SHM_CUR_TXFIFO], SPR_TXE0_FIFO_CMD
+	sl BASER_TXHDR, 1, SPR_TXE0_TX_SHM_ADDR		/* TXHDR scratch SHM address times two */
+	mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT		/* Select the FIFO */
+	mov (TXHDR_WSIZE * 2), SPR_TXE0_TX_COUNT	/* Number of bytes to copy */
+	or TXE_SELECT_DST_SHM, [SHM_CUR_TXFIFO], SPR_TXE0_SELECT /* Copy to SHM */
+ wait:	jnext COND_TX_BUSY, wait-			/* Wait for the TXE to start */
+ wait:	jext COND_TX_BUSY, wait-			/* Wait for the TXE to finish */
+
+	ret_after_jmp lr0, lr0
+
 /* --- Function: Lowlevel panic helper --- 
  * Link Register: Doesn't matter. This won't return anyway.
  * The Panic reason is passed in R_PANIC_REASON

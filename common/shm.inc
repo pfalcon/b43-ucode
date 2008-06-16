@@ -12,10 +12,15 @@
 #define HOST_SHM_RCMTA		4
 
 
-/* Macro to convert a host-SHM-offset to a microcode-SHM-offset.
+/* Macro to convert a host-SHM-address to a microcode-SHM-address.
  * This also asserts that the address is word aligned. */
-#define SHM(offset)		(((offset) / 2) +		\
-				 (%assert((offset & 1) == 0)))
+#define SHM(address)		(((address) / 2) +		\
+				 (%assert((address & 1) == 0)))
+/* Macro to convert a byte-offset into a microcode-SHM-word-offset.
+ * This does the same as SHM(), but is used to mark offsets that are not
+ * based on absolute zero, but relative. */
+#define SHM_OFFSET(offset)	SHM(offset)
+
 
 /* Misc variables */
 #define SHM_WLCOREREV		SHM(0x016) /* 802.11 core revision */
@@ -151,9 +156,73 @@
 
 
 
+/* TX header WORD(!) offsets. These are used as offsets into the TX header
+ * information fields in SHM for each FIFO via offset register pointer. */
+#define TXHDR_MACLO		SHM_OFFSET(0x00) /* MAC control lo */
+#define TXHDR_MACHI		SHM_OFFSET(0x02) /* MAC control hi */
+#define TXHDR_FCTL		SHM_OFFSET(0x04) /* Frame Control field copy */
+#define TXHDR_FES		SHM_OFFSET(0x06) /* TX FES Time Normal */
+#define TXHDR_PHYCTL		SHM_OFFSET(0x08) /* PHY control word */
+#define TXHDR_PHYCTL1		SHM_OFFSET(0x0A) /* PHY control word 1 */
+#define TXHDR_PHYCTL1FB		SHM_OFFSET(0x0C) /* PHY control word 1 for fallback */
+#define TXHDR_PHYCTL1RTS	SHM_OFFSET(0x0E) /* PHY control word 1 RTS */
+#define TXHDR_PHYCTL1RTSFB	SHM_OFFSET(0x10) /* PHY control word 1 RTS for fallback */
+#define TXHDR_PHYRATES		SHM_OFFSET(0x12) /* PHY rates */
+#define TXHDR_EFT		SHM_OFFSET(0x14) /* Extra Frame Types */
+#define TXHDR_IV		SHM_OFFSET(0x16) /* IV / crypto field */
+#define TXHDR_RA		SHM_OFFSET(0x26) /* Frame receiver address */
+#define TXHDR_FESFB		SHM_OFFSET(0x2C) /* TX FES Time fallback */
+#define TXHDR_RTSPLCPFB		SHM_OFFSET(0x2E) /* RTS PLCP fallback */
+#define TXHDR_RTSDURFB		SHM_OFFSET(0x34) /* RTS duration fallback */
+#define TXHDR_PLCPFB		SHM_OFFSET(0x36) /* PLCP fallback */
+#define TXHDR_DURFB		SHM_OFFSET(0x3C) /* Duration fallback */
+#define TXHDR_MIMOML		SHM_OFFSET(0x3E) /* MIMO mode length */
+#define TXHDR_MIMOFBRL		SHM_OFFSET(0x40) /* MIMO fallback rate length */
+#define TXHDR_TOLO		SHM_OFFSET(0x42) /* Timeout low */
+#define TXHDR_TOHI		SHM_OFFSET(0x44) /* Timeout high */
+#define TXHDR_MIMOAS		SHM_OFFSET(0x46) /* MIMO antenna select */
+#define TXHDR_PRELSZ		SHM_OFFSET(0x48) /* Preload size */
+#define TXHDR_UNUSED1		SHM_OFFSET(0x4A) /* Unused padding */
+#define TXHDR_COOKIE		SHM_OFFSET(0x4C) /* Frame ID */
+#define TXHDR_STAT		SHM_OFFSET(0x4E) /* Status */
+#define TXHDR_RTSPLCP		SHM_OFFSET(0x50) /* RTS PLCP header */
+#define TXHDR_RTS		SHM_OFFSET(0x56) /* RTS frame */
+#define TXHDR_UNUSED2		SHM_OFFSET(0x66) /* Unused padding */
+#define TXHDR_WSIZE		(104 / 2) /* Header size, in words */
+
+
 
 /* --- Misc offsets that are only valid for the OpenSource firmware. --- */
 
+
+/* The TX FIFO index that we are currently processing.
+ * Note that this index is leftshifted by 8 to avoid shifting when
+ * writing it to the hardware registers. */
+#define SHM_CUR_TXFIFO		SHM(0x970)
+#define  CUR_TXFIFO_SHIFT	8
+/* Lookup table for the mapping of the FIFO number to the TX header
+ * scratch space in SHM. The lookup table is written in initvals. */
+#define SHM_TXHDR_LT		SHM_TXHDR_LT_FIFO0
+#define  SHM_TXHDR_LT_FIFO0	SHM(0x972)
+#define  SHM_TXHDR_LT_FIFO1	SHM(0x974)
+#define  SHM_TXHDR_LT_FIFO2	SHM(0x976)
+#define  SHM_TXHDR_LT_FIFO3	SHM(0x978)
+#define  SHM_TXHDR_LT_FIFO4	SHM(0x97A)
+/* Allocated space for the FIFO-0 TX header */
+#define SHM_TXHDR0_START	SHM(0x97C)
+#define SHM_TXHDR0_END		SHM(0x9E2)
+/* Allocated space for the FIFO-1 TX header */
+#define SHM_TXHDR1_START	SHM(0x9E4)
+#define SHM_TXHDR1_END		SHM(0xA4A)
+/* Allocated space for the FIFO-2 TX header */
+#define SHM_TXHDR2_START	SHM(0xA4C)
+#define SHM_TXHDR2_END		SHM(0xAB2)
+/* Allocated space for the FIFO-3 TX header */
+#define SHM_TXHDR3_START	SHM(0xAB4)
+#define SHM_TXHDR3_END		SHM(0xB1A)
+/* Allocated space for the FIFO-4 TX header */
+#define SHM_TXHDR4_START	SHM(0xB1C)
+#define SHM_TXHDR4_END		SHM(0xB82)
 
 /* Background noise measuring context */
 #define SHM_BGN_START_TSF1	SHM(0xB84) /* TSF word1 when the measurement started */

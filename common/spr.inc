@@ -174,6 +174,7 @@
 #define SPR_TXE0_0x3c				spr09e
 #define SPR_TXE0_0x3e				spr09f
 #define SPR_TXE0_FIFO_CMD			spr0a0
+#define  TXE_FIFO_CMD_COPY			14 /* bit14: Start copying of data */
 #define SPR_TXE0_FIFO_FLUSH			spr0a1
 #define SPR_TXE0_FIFO_THRES			spr0a2
 #define SPR_TXE0_FIFO_RDY			spr0a3
@@ -194,8 +195,10 @@
 #define SPR_TXE0_0x64				spr0b2
 #define SPR_TXE0_0x66				spr0b3
 #define SPR_TXE0_SELECT				spr0b4
-#define SPR_TXE0_TX_Count			spr0b5
-#define SPR_TXE0_TX_Shared_Memory_Address	spr0b6
+#define  TXE_SELECT_DST_SERIALISER		1 /* Destination code for the serialiser */
+#define  TXE_SELECT_DST_SHM			5 /* Destination code for the SHM */
+#define SPR_TXE0_TX_COUNT			spr0b5
+#define SPR_TXE0_TX_SHM_ADDR			spr0b6 /* The SHM address to copy the TX header to (in bytes!) */
 #define SPR_TXE0_0x6e				spr0b7
 #define SPR_TXE0_0x70				spr0b8
 #define SPR_TXE0_0x72				spr0b9

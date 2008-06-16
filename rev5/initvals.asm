@@ -92,6 +92,15 @@
 	/* Unused padding in RX header */
 	shm16 0, HOST_SHM_SHARED, (SHM_RXHDR_PAD * 2)
 
+	/* TX header scratch space offset lookup table.
+	 * This initializes the lookup table with the start addresses of
+	 * the SHM scratch space for TX headers. */
+	shm16 SHM_TXHDR0_START, HOST_SHM_SHARED, (SHM_TXHDR_LT_FIFO0 * 2)
+	shm16 SHM_TXHDR1_START, HOST_SHM_SHARED, (SHM_TXHDR_LT_FIFO1 * 2)
+	shm16 SHM_TXHDR2_START, HOST_SHM_SHARED, (SHM_TXHDR_LT_FIFO2 * 2)
+	shm16 SHM_TXHDR3_START, HOST_SHM_SHARED, (SHM_TXHDR_LT_FIFO3 * 2)
+	shm16 SHM_TXHDR4_START, HOST_SHM_SHARED, (SHM_TXHDR_LT_FIFO4 * 2)
+
 
 .initvals(b0g0bsinitvals5)
 	/* Interframe space init */
