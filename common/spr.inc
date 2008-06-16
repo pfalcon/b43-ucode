@@ -88,9 +88,9 @@
 #define SPR_Postcard				spr04a
 #define SPR_Postcard_Location_Low		spr04b
 #define SPR_Postcard_Location_High		spr04c
-#define SPR_GPIO_In				spr04d
-#define SPR_GPIO_Out				spr04e
-#define SPR_GPIO_Output_Enable			spr04f
+#define SPR_GPIO_IN				spr04d
+#define SPR_GPIO_OUT				spr04e
+#define SPR_GPIO_OUTEN				spr04f
 #define SPR_BRED0				spr050
 #define SPR_BRED1				spr051
 #define SPR_BRED2				spr052
@@ -140,7 +140,7 @@
 #define SPR_PSM_0x7c				spr07e
 #define SPR_PSM_0x7e				spr07f
 #define SPR_TXE0_CTL				spr080
-#define  TXE_CTL_BIT0				0 /* bit0: FIXME unknown meaning */
+#define  TXE_CTL_ENABLED			0 /* bit0: The engine is enabled */
 #define  TXE_CTL_FCS				14 /* bit14: Generate the FCS */
 #define SPR_TXE0_AUX				spr081
 #define SPR_TXE0_TS_LOC				spr082
@@ -195,8 +195,8 @@
 #define SPR_TXE0_0x64				spr0b2
 #define SPR_TXE0_0x66				spr0b3
 #define SPR_TXE0_SELECT				spr0b4
-#define  TXE_SELECT_DST_SERIALISER		1 /* Destination code for the serialiser */
-#define  TXE_SELECT_DST_SHM			5 /* Destination code for the SHM */
+#define  TXE_SELECT_DST_SERIALISER		0x0001 /* Destination code for the serialiser */
+#define  TXE_SELECT_DST_SHM			0x0005 /* Destination code for the SHM */
 #define SPR_TXE0_TX_COUNT			spr0b5
 #define SPR_TXE0_TX_SHM_ADDR			spr0b6 /* The SHM address to copy the TX header to (in bytes!) */
 #define SPR_TXE0_0x6e				spr0b7

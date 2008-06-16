@@ -78,7 +78,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov SHM_STACK_START, BASER_STACKPTR
 
 	/* Initialize the hardware */
-	mov 0, SPR_GPIO_Out			/* Disable any GPIO pin */
+	mov 0, SPR_GPIO_OUT			/* Disable any GPIO pin */
 	mov 0, SPR_PSM_0x4e			/* FIXME needed? */
 	mov 0, SPR_PSM_0x0c			/* FIXME what is this? */
 	mov 32786, SPR_SCC_Divisor		/* Init slow clock control */
@@ -251,13 +251,21 @@ h_channel_setup:
 	js (MACCMD_BEAC0 | MACCMD_BEAC1), SPR_MAC_CMD, h_flag_bcn_tmpl_update
  skip_beacon_updates:
 	jext EOI(COND_RX_ATIMWINEND), h_atim_win_end
-	jzx 0, TXE_CTL_BIT0, SPR_TXE0_CTL, 0, h_tx_engine_prepare
+	jzx 0, TXE_CTL_ENABLED, SPR_TXE0_CTL, 0, h_tx_engine_may_start
 	//TODO
 	jmp eventloop_restart
 
-h_tx_engine_prepare:
-//	MARKER(0)
+/* --- Handler: A transmission may start now. First stage of TX engine setup. */
+h_tx_engine_may_start:
+ wait:	jext EOI(COND_PHY6), wait-		/* Wait for the condition to clear */
+	jnand SPR_BRC, 0x1F, eventloop_idle	/* No transmission pending */
+	call lr0, bluetooth_is_transmitting	/* Check if BT is transmitting */
+	jne Ra, 0, out_disable+			/* Bail out and disable TX */
+MARKER(0)
 	//TODO
+	jmp eventloop_idle
+out_disable:
+	and SPR_TXE0_CTL, (~(1 << TXE_CTL_ENABLED)), SPR_TXE0_CTL
 	jmp eventloop_idle
 
 /* --- Handler: Do some beacon and TBTT related updates --- */
@@ -737,6 +745,23 @@ load_txhdr_to_shm:
  wait:	jext COND_TX_BUSY, wait-			/* Wait for the TXE to finish */
 
 	ret_after_jmp lr0, lr0
+
+/* --- Function: Check whether the Bluetooth-transmitting GPIO is asserted ---
+ * This checks the GPIO-in line from the bluetooth module.
+ * Returns 1 in Ra, if the BT module is transmitting.
+ * Returns 0 in Ra, if the BT module is idle or receiving.
+ * Link Register: lr0
+ */
+bluetooth_is_transmitting:
+	mov 0, Ra
+	jzx 0, SHM_HF_LO_BTCOEX, [SHM_HF_LO], 0, out+
+	jnzx 0, SHM_HF_MI_BTCOEXALT, [SHM_HF_MI], 0, bt_alt_pins+
+	srx 0, 7, SPR_GPIO_IN, 0, Ra
+	jmp out+
+ bt_alt_pins:
+	srx 0, 4, SPR_GPIO_IN, 0, Ra
+ out:
+	ret lr0, lr0
 
 /* --- Function: Lowlevel panic helper --- 
  * Link Register: Doesn't matter. This won't return anyway.
