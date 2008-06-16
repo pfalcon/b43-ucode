@@ -16,6 +16,9 @@
 /* Convert a mask number to a mask bitmask.
  * Use this to convert FOOBAR_M into a bitmask. */
 #define MASK(m)			((1 << (m + 1)) - 1)
+/* Convert a bit-number to a mask with that bit set (only) */
+#define BIT(nr)			(1 << (nr))
+
 
 
 

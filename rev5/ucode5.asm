@@ -259,12 +259,40 @@ h_channel_setup:
 h_tx_engine_may_start:
  wait:	jext EOI(COND_PHY6), wait-		/* Wait for the condition to clear */
 	jnand SPR_BRC, 0x1F, eventloop_idle	/* No transmission pending */
+
 	call lr0, bluetooth_is_transmitting	/* Check if BT is transmitting */
 	jne Ra, 0, out_disable+			/* Bail out and disable TX */
-MARKER(0)
+
+	srx 6, 3, SPR_IFS_0x0c, 0, Ra
+	jle Ra, 3, eventloop_idle		/* Not yet */
+	jnzx 0, TXE_STATUS_BUSY, SPR_TXE0_STATUS, 0, eventloop_idle /* Not yet, TXE is busy. */
+
+	jzx 0, SHM_HF_LO_EDCF, [SHM_HF_LO], 0, no_edcf+
+	jnzx 0, 15, SPR_IFS_0x0c, 0, no_edcf+
+	/* prepare EDCF */
+jmp no_edcf+//FIXME
+	and SPR_TXE0_FIFO_RDY, (BIT(FIFO_BK) | (BIT(FIFO_BE) | (BIT(FIFO_VI) | BIT(FIFO_VO)))), Ra
+	je Ra, 0, eventloop_idle		/* Currently no FIFO ready :( */
+	je Ra, [SHM_SAVED_FIFO_RDY_QOS], eventloop_idle /* FIFO status unchanged */
+	call lr0, update_qos_avail
 	//TODO
+	jmp load_txhdr+
+ no_edcf:
+	/* EDCF disabled */
+	jzx 0, FIFO_VO, SPR_TXE0_FIFO_RDY, 0, eventloop_idle /* Voice-FIFO not ready */
+	mov (FIFO_VO << CUR_TXFIFO_SHIFT), Ra
+	je [SHM_CUR_TXFIFO], Ra, eventloop_idle /* OK, already using it */
+	call lr0, tx_engine_stop
+	mov (FIFO_VO << CUR_TXFIFO_SHIFT), [SHM_CUR_TXFIFO] /* We're using Voice-FIFO */
+
+ load_txhdr:
+	/* OK, we decided on which FIFO to use. Now load the header data and pointer */
+	call lr0, load_txhdr_to_shm
+
+//TODO
+
 	jmp eventloop_idle
-out_disable:
+ out_disable:
 	and SPR_TXE0_CTL, (~(1 << TXE_CTL_ENABLED)), SPR_TXE0_CTL
 	jmp eventloop_idle
 
@@ -736,6 +764,7 @@ load_txhdr_to_shm:
 	mov [0, OFFR_TXHDR], BASER_TXHDR		/* OFFR_TXHDR = pointer to TXHDR-mem */
 
 	/* Now read the TX header data from the FIFO into SHM */
+	//FIXME do not reload the data, if we already have it.
 	orx 0, TXE_FIFO_CMD_COPY, 1, [SHM_CUR_TXFIFO], SPR_TXE0_FIFO_CMD
 	sl BASER_TXHDR, 1, SPR_TXE0_TX_SHM_ADDR		/* TXHDR scratch SHM address times two */
 	mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT		/* Select the FIFO */
@@ -761,6 +790,13 @@ bluetooth_is_transmitting:
  bt_alt_pins:
 	srx 0, 4, SPR_GPIO_IN, 0, Ra
  out:
+	ret lr0, lr0
+
+/* --- Function: Update QoS availability ---
+ * Link Register: lr0
+ */
+update_qos_avail:
+	//TODO
 	ret lr0, lr0
 
 /* --- Function: Lowlevel panic helper --- 

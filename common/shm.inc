@@ -195,6 +195,8 @@
 /* --- Misc offsets that are only valid for the OpenSource firmware. --- */
 
 
+/* Saved FIFO ready status for QOS */
+#define SHM_SAVED_FIFO_RDY_QOS	SHM(0x96E)
 /* The TX FIFO index that we are currently processing.
  * Note that this index is leftshifted by 8 to avoid shifting when
  * writing it to the hardware registers. */

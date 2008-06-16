@@ -149,6 +149,8 @@
 #define SPR_TXE0_WM1				spr085
 #define SPR_TXE0_PHY_CTL			spr086
 #define SPR_TXE0_STATUS				spr087
+#define  TXE_STATUS_BUSY			7 /* bit7: TX engine busy */
+#define  TXE_STATUS_MEND			10 /* bit10: TXE M end */
 #define SPR_TXE0_0x10				spr088
 #define SPR_TXE0_0x12				spr089
 #define SPR_TXE0_0x14				spr08a
@@ -177,7 +179,7 @@
 #define  TXE_FIFO_CMD_COPY			14 /* bit14: Start copying of data */
 #define SPR_TXE0_FIFO_FLUSH			spr0a1
 #define SPR_TXE0_FIFO_THRES			spr0a2
-#define SPR_TXE0_FIFO_RDY			spr0a3
+#define SPR_TXE0_FIFO_RDY			spr0a3 /* FIFO-ready bitmask. bit-nr = FIFO-nr */
 #define SPR_TXE0_FIFO_PRI_RDY			spr0a4
 #define SPR_TXE0_FIFO_RQ_PRI			spr0a5
 #define SPR_TXE0_Template_TX_Pointer		spr0a6
@@ -195,8 +197,11 @@
 #define SPR_TXE0_0x64				spr0b2
 #define SPR_TXE0_0x66				spr0b3
 #define SPR_TXE0_SELECT				spr0b4
-#define  TXE_SELECT_DST_SERIALISER		0x0001 /* Destination code for the serialiser */
-#define  TXE_SELECT_DST_SHM			0x0005 /* Destination code for the SHM */
+#define  TXE_SELECT_DST				0x001C /* Destination code mask */
+#define   TXE_SELECT_DST_SERIALISER		0x0001 /* Destination code for the serialiser */
+#define   TXE_SELECT_DST_SHM			0x0005 /* Destination code for the SHM */
+#define  TXE_SELECT_LEN				0x0060 /* Length specifier mask */
+#define   TXE_SELECT_LEN_TXCNT			0x0020 /* Use length as specified in TX_COUNT */
 #define SPR_TXE0_TX_COUNT			spr0b5
 #define SPR_TXE0_TX_SHM_ADDR			spr0b6 /* The SHM address to copy the TX header to (in bytes!) */
 #define SPR_TXE0_0x6e				spr0b7
@@ -584,6 +589,15 @@
 #define MACCTL_DISCTXSTAT	13 /* bit13: Discard TX status */
 #define MACCTL_DISCPMQ		14 /* bit14: Discard Power Management Queue */
 #define MACCTL_GMODE		15 /* bit15: G Mode */
+
+
+/* The FIFO queue numbers */
+#define FIFO_BK			0 /* Background */
+#define FIFO_BE			1 /* Best Effort */
+#define FIFO_VI			2 /* Video */
+#define FIFO_VO			3 /* Voice */
+#define FIFO_MCAST		4 /* Broadcast / Multicast */
+#define FIFO_ATIM		5 /* ATIM window info */
 
 
 #endif /* SPECIAL_PURPOSE_REGISTER_H_ */
