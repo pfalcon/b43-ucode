@@ -33,6 +33,7 @@
 #define GPHY_CLASSCTL			PHY_EXTG(0x02) /* Classify control */
 #define  GPHY_CLASSCTL_CCK		0 /* bit0: CCK */
 #define  GPHY_CLASSCTL_OFDM		1 /* bit1: OFDM */
+#define GPHY_ANAOVER			PHY_EXTG(0x14) /* Analog override */
 
 
 

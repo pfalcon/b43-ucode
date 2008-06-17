@@ -248,10 +248,14 @@ h_channel_setup:
 	call lr0, cca_indication_check
 	jext COND_4_C4, skip_beacon_updates+
 	jext COND_TX_TBTTEXPIRE, h_beacon_tbtt_updates
+	/* Tell the Bluetooth device that it can transmit now. */
+	mov 0, Ra
+	call lr0, bluetooth_notify
 	js (MACCMD_BEAC0 | MACCMD_BEAC1), SPR_MAC_CMD, h_flag_bcn_tmpl_update
  skip_beacon_updates:
 	jext EOI(COND_RX_ATIMWINEND), h_atim_win_end
 	jzx 0, TXE_CTL_ENABLED, SPR_TXE0_CTL, 0, h_tx_engine_may_start
+//MARKER(0)
 	//TODO
 	jmp eventloop_restart
 
@@ -278,20 +282,22 @@ jmp no_edcf+//FIXME
 	//TODO
 	jmp load_txhdr+
  no_edcf:
-	/* EDCF disabled */
-	jzx 0, FIFO_VO, SPR_TXE0_FIFO_RDY, 0, eventloop_idle /* Voice-FIFO not ready */
-	mov (FIFO_VO << CUR_TXFIFO_SHIFT), Ra
+	/* EDCF disabled. Use Best-Effort FIFO */
+	jzx 0, FIFO_BE, SPR_TXE0_FIFO_RDY, 0, eventloop_idle /* FIFO not ready */
+	mov (FIFO_BE << CUR_TXFIFO_SHIFT), Ra
 	je [SHM_CUR_TXFIFO], Ra, eventloop_idle /* OK, already using it */
 	call lr0, tx_engine_stop
-	mov (FIFO_VO << CUR_TXFIFO_SHIFT), [SHM_CUR_TXFIFO] /* We're using Voice-FIFO */
+	mov (FIFO_BE << CUR_TXFIFO_SHIFT), [SHM_CUR_TXFIFO] /* We're using this FIFO */
 
  load_txhdr:
 	/* OK, we decided on which FIFO to use. Now load the header data and pointer */
 	call lr0, load_txhdr_to_shm
 
-//TODO
+	/* This will start the TX engine and make the TX-now condition trigger. */
+	or SPR_TXE0_CTL, (1 << TXE_CTL_ENABLED), SPR_TXE0_CTL
 
-	jmp eventloop_idle
+	jmp eventloop_restart
+
  out_disable:
 	and SPR_TXE0_CTL, (~(1 << TXE_CTL_ENABLED)), SPR_TXE0_CTL
 	jmp eventloop_idle
@@ -314,8 +320,21 @@ h_atim_win_end:
 	//TODO
 	jmp eventloop_restart
 
-/* --- Handler: Transmit another frame --- */
+/* --- Handler: Transmit the next frame on the current FIFO ---
+ * TX header and pointer to it is already loaded.
+ */
 h_transmit_frame:
+	/* First apply the 4318 TSSI workaround */
+	jzx 0, SHM_HF_MI_4318TSSI, [SHM_HF_MI_4318TSSI], 0, no_4318tssi_workaround+
+	mov GPHY_ANAOVER, Ra
+	mov 8, Rb
+	call lr0, phy_write
+ no_4318tssi_workaround:
+
+	/* Tell the Bluetooth device that we're going to transmit, soon. */
+	mov 1, Ra
+	call lr0, bluetooth_notify
+
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle
@@ -385,7 +404,7 @@ h_received_valid_plcp:
 	mov SPR_TSF_WORD2, [SHM_RX_TSF2]
 	mov SPR_TSF_WORD3, [SHM_RX_TSF3]
 	jl SPR_TSF_WORD0, [SHM_RX_TSF0], tsf_again-	/* word0 overflow */
-	jzx 0, 0, SPR_TXE0_CTL, 0, txengine_ok+
+	jzx 0, TXE_CTL_ENABLED, SPR_TXE0_CTL, 0, txengine_ok+
 	mov 0, SPR_TXE0_CTL				/* Disable the TX engine */
 	and SPR_BRC, (~0x7), SPR_BRC
  txengine_ok:
@@ -783,12 +802,29 @@ load_txhdr_to_shm:
  */
 bluetooth_is_transmitting:
 	mov 0, Ra
-	jzx 0, SHM_HF_LO_BTCOEX, [SHM_HF_LO], 0, out+
+	jzx 0, SHM_HF_LO_BTCOEX, [SHM_HF_LO], 0, out+	/* BT coex not used */
 	jnzx 0, SHM_HF_MI_BTCOEXALT, [SHM_HF_MI], 0, bt_alt_pins+
 	srx 0, 7, SPR_GPIO_IN, 0, Ra
 	jmp out+
  bt_alt_pins:
 	srx 0, 4, SPR_GPIO_IN, 0, Ra
+ out:
+	ret lr0, lr0
+
+/* --- Function: Depending on Ra, notify TX or IDLE to the BT module ---
+ * Notify either "WLAN is transmitting" or "WLAN is not transmitting"
+ * to the Bluetooth module. The condition is passed in Ra.
+ * If Ra is 0, then WLAN-is-NOT-transmitting is notified to BT.
+ * If Ra is 1, then WLAN-is-transmitting is notified to BT.
+ * Link Register: lr0
+ */
+bluetooth_notify:
+	jzx 0, SHM_HF_LO_BTCOEX, [SHM_HF_LO], 0, out+	/* BT coex not used */
+	jnzx 0, SHM_HF_MI_BTCOEXALT, [SHM_HF_MI], 0, bt_alt_pins+
+	orx 0, 8, Ra, SPR_GPIO_OUT, SPR_GPIO_OUT
+	jmp out+
+ bt_alt_pins:
+	orx 0, 5, Ra, SPR_GPIO_OUT, SPR_GPIO_OUT
  out:
 	ret lr0, lr0
 
