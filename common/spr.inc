@@ -214,70 +214,72 @@
 #define SPR_TXE0_0x7a				spr0bd
 #define SPR_TXE0_0x7c				spr0be
 #define SPR_TXE0_0x7e				spr0bf
-#define SPR_TXE_Template_Mask_0			spr0c0
-#define SPR_TXE_Template_Mask_2			spr0c1
-#define SPR_TXE_Template_Mask_4			spr0c2
-#define SPR_TXE_Template_Mask_6			spr0c3
-#define SPR_TXE_Template_Mask_8			spr0c4
-#define SPR_TXE_Template_Mask_10		spr0c5
-#define SPR_TXE_Template_Mask_12		spr0c6
-#define SPR_TXE_Template_Mask_14		spr0c7
-#define SPR_TXE_Template_Mask_16		spr0c8
-#define SPR_TXE_Template_Mask_18		spr0c9
-#define SPR_TXE_Template_Mask_20		spr0ca
-#define SPR_TXE_Template_Mask_22		spr0cb
-#define SPR_TXE_Template_Mask_24		spr0cc
-#define SPR_TXE_Template_Mask_26		spr0cd
-#define SPR_TXE_Template_Mask_28		spr0ce
-#define SPR_TXE_Template_Mask_30		spr0cf
-#define SPR_TXE_Template_Mask_32		spr0d0
-#define SPR_TXE_Template_Mask_34		spr0d1
-#define SPR_TXE_Template_Mask_36		spr0d2
-#define SPR_TXE_Template_Mask_38		spr0d3
-#define SPR_TXE_Template_Mask_40		spr0d4
-#define SPR_TXE_Template_Mask_42		spr0d5
-#define SPR_TXE_Template_Mask_44		spr0d6
-#define SPR_TXE_Template_Mask_46		spr0d7
-#define SPR_TXE_Template_Mask_48		spr0d8
-#define SPR_TXE_Template_Mask_50		spr0d9
-#define SPR_TXE_Template_Mask_52		spr0da
-#define SPR_TXE_Template_Mask_54		spr0db
-#define SPR_TXE_Template_Mask_56		spr0dc
-#define SPR_TXE_Template_Mask_58		spr0dd
-#define SPR_TXE_Template_Mask_60		spr0de
-#define SPR_TXE_Template_Mask_62		spr0df
-#define SPR_TXE_Template_Val_0			spr0e0
-#define SPR_TXE_Template_Val_2			spr0e1
-#define SPR_TXE_Template_Val_4			spr0e2
-#define SPR_TXE_Template_Val_6			spr0e3
-#define SPR_TXE_Template_Val_8			spr0e4
-#define SPR_TXE_Template_Val_10			spr0e5
-#define SPR_TXE_Template_Val_12			spr0e6
-#define SPR_TXE_Template_Val_14			spr0e7
-#define SPR_TXE_Template_Val_16			spr0e8
-#define SPR_TXE_Template_Val_18			spr0e9
-#define SPR_TXE_Template_Val_20			spr0ea
-#define SPR_TXE_Template_Val_22			spr0eb
-#define SPR_TXE_Template_Val_24			spr0ec
-#define SPR_TXE_Template_Val_26			spr0ed
-#define SPR_TXE_Template_Val_28			spr0ee
-#define SPR_TXE_Template_Val_30			spr0ef
-#define SPR_TXE_Template_Val_32			spr0f0
-#define SPR_TXE_Template_Val_34			spr0f1
-#define SPR_TXE_Template_Val_36			spr0f2
-#define SPR_TXE_Template_Val_38			spr0f3
-#define SPR_TXE_Template_Val_40			spr0f4
-#define SPR_TXE_Template_Val_42			spr0f5
-#define SPR_TXE_Template_Val_44			spr0f6
-#define SPR_TXE_Template_Val_46			spr0f7
-#define SPR_TXE_Template_Val_48			spr0f8
-#define SPR_TXE_Template_Val_50			spr0f9
-#define SPR_TXE_Template_Val_52			spr0fa
-#define SPR_TXE_Template_Val_54			spr0fb
-#define SPR_TXE_Template_Val_56			spr0fc
-#define SPR_TXE_Template_Val_58			spr0fd
-#define SPR_TXE_Template_Val_60			spr0fe
-#define SPR_TXE_Template_Val_62			spr0ff
+/* Transmit Modify Engine masks */
+#define SPR_TME_MASK0				spr0c0
+#define SPR_TME_MASK2				spr0c1
+#define SPR_TME_MASK4				spr0c2
+#define SPR_TME_MASK6				spr0c3
+#define SPR_TME_MASK8				spr0c4
+#define SPR_TME_MASK10				spr0c5
+#define SPR_TME_MASK12				spr0c6
+#define SPR_TME_MASK14				spr0c7
+#define SPR_TME_MASK16				spr0c8
+#define SPR_TME_MASK18				spr0c9
+#define SPR_TME_MASK20				spr0ca
+#define SPR_TME_MASK22				spr0cb
+#define SPR_TME_MASK24				spr0cc
+#define SPR_TME_MASK26				spr0cd
+#define SPR_TME_MASK28				spr0ce
+#define SPR_TME_MASK30				spr0cf
+#define SPR_TME_MASK32				spr0d0
+#define SPR_TME_MASK34				spr0d1
+#define SPR_TME_MASK36				spr0d2
+#define SPR_TME_MASK38				spr0d3
+#define SPR_TME_MASK40				spr0d4
+#define SPR_TME_MASK42				spr0d5
+#define SPR_TME_MASK44				spr0d6
+#define SPR_TME_MASK46				spr0d7
+#define SPR_TME_MASK48				spr0d8
+#define SPR_TME_MASK50				spr0d9
+#define SPR_TME_MASK52				spr0da
+#define SPR_TME_MASK54				spr0db
+#define SPR_TME_MASK56				spr0dc
+#define SPR_TME_MASK58				spr0dd
+#define SPR_TME_MASK60				spr0de
+#define SPR_TME_MASK62				spr0df
+/* Transmit Modify Engine values */
+#define SPR_TME_VAL0				spr0e0
+#define SPR_TME_VAL2				spr0e1
+#define SPR_TME_VAL4				spr0e2
+#define SPR_TME_VAL6				spr0e3
+#define SPR_TME_VAL8				spr0e4
+#define SPR_TME_VAL10				spr0e5
+#define SPR_TME_VAL12				spr0e6
+#define SPR_TME_VAL14				spr0e7
+#define SPR_TME_VAL16				spr0e8
+#define SPR_TME_VAL18				spr0e9
+#define SPR_TME_VAL20				spr0ea
+#define SPR_TME_VAL22				spr0eb
+#define SPR_TME_VAL24				spr0ec
+#define SPR_TME_VAL26				spr0ed
+#define SPR_TME_VAL28				spr0ee
+#define SPR_TME_VAL30				spr0ef
+#define SPR_TME_VAL32				spr0f0
+#define SPR_TME_VAL34				spr0f1
+#define SPR_TME_VAL36				spr0f2
+#define SPR_TME_VAL38				spr0f3
+#define SPR_TME_VAL40				spr0f4
+#define SPR_TME_VAL42				spr0f5
+#define SPR_TME_VAL44				spr0f6
+#define SPR_TME_VAL46				spr0f7
+#define SPR_TME_VAL48				spr0f8
+#define SPR_TME_VAL50				spr0f9
+#define SPR_TME_VAL52				spr0fa
+#define SPR_TME_VAL54				spr0fb
+#define SPR_TME_VAL56				spr0fc
+#define SPR_TME_VAL58				spr0fd
+#define SPR_TME_VAL60				spr0fe
+#define SPR_TME_VAL62				spr0ff
 #define SPR_TSF_0x00				spr100
 #define SPR_TSF_0x02				spr101
 #define SPR_TSF_CFP_Start_Low			spr102
@@ -536,6 +538,46 @@
 #define SPR_PMQ_0x1a				spr1fd
 #define SPR_PMQ_0x1c				spr1fe
 #define SPR_PMQ_0x1e				spr1ff
+
+/* Named definitions for the Transmit Modify Engine MASK registers */
+#define SPR_TME_M_PLCP0				SPR_TME_MASK0	/* PLCP header (low) */
+#define SPR_TME_M_PLCP1				SPR_TME_MASK2	/* PLCP header (middle) */
+#define SPR_TME_M_PLCP2				SPR_TME_MASK4	/* PLCP header (high) */
+#define SPR_TME_M_FCTL				SPR_TME_MASK6	/* Frame control */
+#define SPR_TME_M_DURID				SPR_TME_MASK8	/* Duration / ID */
+#define SPR_TME_M_ADDR1_0			SPR_TME_MASK10	/* Address 1 (low) */
+#define SPR_TME_M_ADDR1_1			SPR_TME_MASK12	/* Address 1 (middle) */
+#define SPR_TME_M_ADDR1_2			SPR_TME_MASK14	/* Address 1 (high) */
+#define SPR_TME_M_ADDR2_0			SPR_TME_MASK16	/* Address 2 (low) */
+#define SPR_TME_M_ADDR2_1			SPR_TME_MASK18	/* Address 2 (middle) */
+#define SPR_TME_M_ADDR2_2			SPR_TME_MASK20	/* Address 2 (high) */
+#define SPR_TME_M_ADDR3_0			SPR_TME_MASK22	/* Address 3 (low) */
+#define SPR_TME_M_ADDR3_1			SPR_TME_MASK24	/* Address 3 (middle) */
+#define SPR_TME_M_ADDR3_2			SPR_TME_MASK26	/* Address 3 (high) */
+#define SPR_TME_M_SEQ				SPR_TME_MASK28	/* Sequence control */
+#define SPR_TME_M_ADDR4_0			SPR_TME_MASK30	/* Address 4 (low) */
+#define SPR_TME_M_ADDR4_1			SPR_TME_MASK32	/* Address 4 (middle) */
+#define SPR_TME_M_ADDR4_2			SPR_TME_MASK34	/* Address 4 (high) */
+
+/* Named definitions for the Transmit Modify Engine VALUE registers */
+#define SPR_TME_V_PLCP0				SPR_TME_VAL0	/* PLCP header (low) */
+#define SPR_TME_V_PLCP1				SPR_TME_VAL2	/* PLCP header (middle) */
+#define SPR_TME_V_PLCP2				SPR_TME_VAL4	/* PLCP header (high) */
+#define SPR_TME_V_FCTL				SPR_TME_VAL6	/* Frame control */
+#define SPR_TME_V_DURID				SPR_TME_VAL8	/* Duration / ID */
+#define SPR_TME_V_ADDR1_0			SPR_TME_VAL10	/* Address 1 (low) */
+#define SPR_TME_V_ADDR1_1			SPR_TME_VAL12	/* Address 1 (middle) */
+#define SPR_TME_V_ADDR1_2			SPR_TME_VAL14	/* Address 1 (high) */
+#define SPR_TME_V_ADDR2_0			SPR_TME_VAL16	/* Address 2 (low) */
+#define SPR_TME_V_ADDR2_1			SPR_TME_VAL18	/* Address 2 (middle) */
+#define SPR_TME_V_ADDR2_2			SPR_TME_VAL20	/* Address 2 (high) */
+#define SPR_TME_V_ADDR3_0			SPR_TME_VAL22	/* Address 3 (low) */
+#define SPR_TME_V_ADDR3_1			SPR_TME_VAL24	/* Address 3 (middle) */
+#define SPR_TME_V_ADDR3_2			SPR_TME_VAL26	/* Address 3 (high) */
+#define SPR_TME_V_SEQ				SPR_TME_VAL28	/* Sequence control */
+#define SPR_TME_V_ADDR4_0			SPR_TME_VAL30	/* Address 4 (low) */
+#define SPR_TME_V_ADDR4_1			SPR_TME_VAL32	/* Address 4 (middle) */
+#define SPR_TME_V_ADDR4_2			SPR_TME_VAL34	/* Address 4 (high) */
 
 
 /* Interrupts (SPR_MAC_IRQLO/HI) */
