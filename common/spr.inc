@@ -9,6 +9,7 @@
 #define SPR_RXE_FIFOCTL0			spr003
 #define SPR_RXE_FIFOCTL1			spr004
 #define  RXE_FIFOCTL1_STARTCOPY			0 /* bit0: Start copying the data into the FIFO */
+#define  RXE_FIFOCTL1_SUSPEND			2 /* bit2: Suspend the RX engine. Used during TX */
 #define  RXE_FIFOCTL1_HAVEPAD			5 /* bit5: Padding for RX frame present */
 #define SPR_Received_Frame_Count		spr005
 #define SPR_RXE_0x0c				spr006
@@ -347,7 +348,7 @@
 #define SPR_IFS_sifs_nav_tx			spr141
 #define SPR_IFS_slot				spr142
 #define SPR_IFS_0x06				spr143
-#define SPR_IFS_control				spr144
+#define SPR_IFS_CTL				spr144
 #define SPR_IFS_BKOFFDELAY			spr145
 #define SPR_IFS_0x0c				spr146
 #define SPR_IFS_0x0e				spr147

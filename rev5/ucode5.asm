@@ -325,7 +325,7 @@ h_atim_win_end:
  */
 h_transmit_frame:
 	/* First apply the 4318 TSSI workaround */
-	jzx 0, SHM_HF_MI_4318TSSI, [SHM_HF_MI_4318TSSI], 0, no_4318tssi_workaround+
+	jzx 0, SHM_HF_MI_4318TSSI, [SHM_HF_MI], 0, no_4318tssi_workaround+
 	mov GPHY_ANAOVER, Ra
 	mov 8, Rb
 	call lr0, phy_write
@@ -335,9 +335,55 @@ h_transmit_frame:
 	mov 1, Ra
 	call lr0, bluetooth_notify
 
+	/* Update WME parameters */
+	jzx 0, SHM_HF_LO_EDCF, [SHM_HF_LO], 0, no_wme+
+	//TODO
+ no_wme:
+
+	/* Apply the TSSI-reset workaround */
+	jzx 0, SHM_HF_LO_TSSIRPSMW, [SHM_HF_LO], 0, no_tssireset_workaround+
+	mov R2050_TXCTL0, Ra
+	mov 0x11, Rb
+	call lr0, radio_write
+ no_tssireset_workaround:
+
+	mov 0, SPR_TXE0_WM0
+	mov 0, SPR_TXE0_WM1
+	and SPR_BRC, (~0x180), SPR_BRC
+
+	/* Disable hardwarecrypto */
+	mov 0x8300, SPR_WEP_CTL
+	/* Stop RX */
+	mov (1 << RXE_FIFOCTL1_SUSPEND), SPR_RXE_FIFOCTL1
+
+	or SPR_BRC, 0x20, SPR_BRC
+	or SPR_IFS_CTL, 0x10, SPR_IFS_CTL
+	and SPR_BRWK0, (~0x6), SPR_BRWK0
+
+	jext COND_NEED_RESPONSEFR, h_transmit_responseframe
+	jext COND_NEED_BEACON, h_transmit_beaconframe
+
+	/* We transmit a normal data frame from the current FIFO */
 	MARKER(0)
 	//TODO
+
+	/* fallthrough... */
+
+/* --- Handler: Trigger the transmission. ---
+ * This will start the TX engine and push the data to the PHY. */
+h_trigger_transmission:
+	//TODO
 	jmp eventloop_idle
+
+/* --- Handler: Transmit a beacon frame. --- */
+h_transmit_beaconframe:
+	//TODO
+	jmp h_trigger_transmission
+
+/* --- Handler: Transmit a rxframe-response frame. These are ACK or CTS --- */
+h_transmit_responseframe:
+	//TODO
+	jmp h_trigger_transmission
 
 /* --- Handler: Do some TX power radio register updates FIXME --- */
 h_tx_power_updates:
@@ -611,6 +657,7 @@ phy_write:
 /* --- Function: Write to a PHY register. Don't flush ---
  * Link Register: lr0
  * The PHY address is passed in Ra.
+ * Note that the OFDM-routing bit is NOT adjusted!
  * The Data to write is passed in Rb.
  * This function will not busywait to flush the data write.
  * Use phy_write(), if you want flushing.

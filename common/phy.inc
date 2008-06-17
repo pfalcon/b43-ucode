@@ -45,6 +45,12 @@
 #define PHYTYPE_LP		5
 
 
+
+/* 2050 radio registers */
+#define R2050_TXCTL0			0x51
+
+
+
 #endif /* PHY_REGISTERS_H_ */
 
 // vim: syntax=b43 ts=8
