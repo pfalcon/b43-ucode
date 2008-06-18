@@ -198,12 +198,24 @@
 #define SPR_TXE0_0x64				spr0b2
 #define SPR_TXE0_0x66				spr0b3
 #define SPR_TXE0_SELECT				spr0b4
-#define  TXE_SELECT_DST				0x001C /* Destination code mask */
-#define   TXE_SELECT_DST_SERIALISER		0x0001 /* Destination code for the serialiser */
-#define   TXE_SELECT_DST_SHM			0x0005 /* Destination code for the SHM */
-#define  TXE_SELECT_LEN				0x0060 /* Length specifier mask */
-#define   TXE_SELECT_LEN_TXCNT			0x0020 /* Use length as specified in TX_COUNT */
-#define SPR_TXE0_TX_COUNT			spr0b5
+#define  TXE_SELECT_DST				0x0003 /* Destination code mask */
+#define   TXE_SELECT_DST_SHM			0x0001 /* Destination code for the SHM */
+#define   TXE_SELECT_DST_PHY			0x0002 /* ??FIXME: Destination code for the PHY? */
+#define   TXE_SELECT_DST_DISCARD		0x0003 /* Destination code for discarding */
+#define  TXE_SELECT_USE_TXCNT			2 /* bit2: Use the TX_COUNT register */
+#define  TXE_SELECT_UNK0x20			5 /* bit5: ??FIXME: Unknown meaning. Seems to be PHY related. */
+#define  TXE_SELECT_SRC				0x1F00 /* Source code mask */
+#define  TXE_SELECT_SRC_SHIFT			8
+#define   TXE_SELECT_SRC_FIFO0			0x0000 /* Source code for FIFO 0 */
+#define   TXE_SELECT_SRC_FIFO1			0x0100 /* Source code for FIFO 1 */
+#define   TXE_SELECT_SRC_FIFO2			0x0200 /* Source code for FIFO 2 */
+#define   TXE_SELECT_SRC_FIFO3			0x0300 /* Source code for FIFO 3 */
+#define   TXE_SELECT_SRC_FIFO4			0x0400 /* Source code for FIFO 4 */
+#define   TXE_SELECT_SRC_FIFO5			0x0500 /* Source code for FIFO 5 */
+#define   TXE_SELECT_SRC_FIFO6			0x0600 /* Source code for FIFO 6 */
+#define   TXE_SELECT_SRC_FIFO7			0x0700 /* Source code for FIFO 7 */
+#define   TXE_SELECT_SRC_TRAM			0x0800 /* Source code for Template Ram */
+#define SPR_TXE0_TX_COUNT			spr0b5 /* Number of bytes to process */
 #define SPR_TXE0_TX_SHM_ADDR			spr0b6 /* The SHM address to copy the TX header to (in bytes!) */
 #define SPR_TXE0_0x6e				spr0b7
 #define SPR_TXE0_0x70				spr0b8

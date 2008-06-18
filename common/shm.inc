@@ -159,6 +159,7 @@
 /* TX header WORD(!) offsets. These are used as offsets into the TX header
  * information fields in SHM for each FIFO via offset register pointer. */
 #define TXHDR_MACLO		SHM_OFFSET(0x00) /* MAC control lo */
+#define  TXHDR_MACLO_DFCS	6 /* bit6: Do not generate FCS */
 #define TXHDR_MACHI		SHM_OFFSET(0x02) /* MAC control hi */
 #define TXHDR_FCTL		SHM_OFFSET(0x04) /* Frame Control field copy */
 #define TXHDR_FES		SHM_OFFSET(0x06) /* TX FES Time Normal */
@@ -189,7 +190,7 @@
 #define TXHDR_RTS		SHM_OFFSET(0x56) /* RTS frame */
 #define TXHDR_UNUSED2		SHM_OFFSET(0x66) /* Unused padding */
 #define TXHDR_WSIZE		(104 / 2) /* Header size, in words */
-
+#define TXHDR_NR_COPY_BYTES	(TXHDR_RTSPLCP * 2) /* We copy everything up to the RTS header to SHM */
 
 
 /* --- Misc offsets that are only valid for the OpenSource firmware. --- */
@@ -201,7 +202,7 @@
  * Note that this index is leftshifted by 8 to avoid shifting when
  * writing it to the hardware registers. */
 #define SHM_CUR_TXFIFO		SHM(0x970)
-#define  CUR_TXFIFO_SHIFT	8
+#define  CUR_TXFIFO_SHIFT	TXE_SELECT_SRC_SHIFT
 /* Lookup table for the mapping of the FIFO number to the TX header
  * scratch space in SHM. The lookup table is written in initvals. */
 #define SHM_TXHDR_LT		SHM_TXHDR_LT_FIFO0

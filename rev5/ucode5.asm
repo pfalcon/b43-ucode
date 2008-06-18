@@ -364,14 +364,22 @@ h_transmit_frame:
 	jext COND_NEED_BEACON, h_transmit_beaconframe
 
 	/* We transmit a normal data frame from the current FIFO */
-	MARKER(0)
-	//TODO
 
 	/* fallthrough... */
 
 /* --- Handler: Trigger the transmission. ---
  * This will start the TX engine and push the data to the PHY. */
 h_trigger_transmission:
+	/* Set the generate-FCS bit */
+	srx 0, TXHDR_MACLO_DFCS, [TXHDR_MACLO, OFFR_TXHDR], 0, Ra
+	xor Ra, 1, Ra /* flip */
+	orx 0, TXE_CTL_FCS, Ra, SPR_TXE0_CTL, SPR_TXE0_CTL
+
+	/* FIXME: Send SELFCTS or RTS if needed */
+
+	/* Now poke the TXE */
+	//TODO
+
 	//TODO
 	jmp eventloop_idle
 
@@ -820,6 +828,9 @@ cca_indication_check:
 /* --- Function: Load current TX header into SHM
  * This will make OFFR_TXHDR point to the current TX header in SHM
  * and load the header data into the SHM.
+ * After this has finished, the TXE-FIFO will point to the data right
+ * after the TX header. That is the RTS frame PLCP. So you can continue
+ * to poke with the RTS afterwards.
  * Link Register: lr0
  */
 load_txhdr_to_shm:
@@ -830,12 +841,12 @@ load_txhdr_to_shm:
 	mov [0, OFFR_TXHDR], BASER_TXHDR		/* OFFR_TXHDR = pointer to TXHDR-mem */
 
 	/* Now read the TX header data from the FIFO into SHM */
-	//FIXME do not reload the data, if we already have it.
 	orx 0, TXE_FIFO_CMD_COPY, 1, [SHM_CUR_TXFIFO], SPR_TXE0_FIFO_CMD
 	sl BASER_TXHDR, 1, SPR_TXE0_TX_SHM_ADDR		/* TXHDR scratch SHM address times two */
 	mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT		/* Select the FIFO */
-	mov (TXHDR_WSIZE * 2), SPR_TXE0_TX_COUNT	/* Number of bytes to copy */
-	or TXE_SELECT_DST_SHM, [SHM_CUR_TXFIFO], SPR_TXE0_SELECT /* Copy to SHM */
+	mov TXHDR_NR_COPY_BYTES, SPR_TXE0_TX_COUNT	/* Number of bytes to copy */
+	/* Select source and destination. This will start the operation. */
+	or (TXE_SELECT_DST_SHM | BIT(TXE_SELECT_USE_TXCNT)), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
  wait:	jnext COND_TX_BUSY, wait-			/* Wait for the TXE to start */
  wait:	jext COND_TX_BUSY, wait-			/* Wait for the TXE to finish */
 
