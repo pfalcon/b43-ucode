@@ -375,10 +375,38 @@ h_trigger_transmission:
 	xor Ra, 1, Ra /* flip */
 	orx 0, TXE_CTL_FCS, Ra, SPR_TXE0_CTL, SPR_TXE0_CTL
 
+	call lr0, load_txhdr_to_shm
+	/* The TXE-FIFO will point to the RTS frame now */
+
 	/* FIXME: Send SELFCTS or RTS if needed */
 
 	/* Now poke the TXE */
 	//TODO
+
+/* debugging: Put RTS to SHM 0x800 */
+mov 0x800, SPR_TXE0_TX_SHM_ADDR
+mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
+mov 24, SPR_TXE0_TX_COUNT
+or (TXE_SELECT_DST_SHM | BIT(TXE_SELECT_USE_TXCNT)), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
+ wait:	jnext COND_TX_BUSY, wait-			/* Wait for the TXE to start */
+ wait:	jext COND_TX_BUSY, wait-			/* Wait for the TXE to finish */
+
+	mov 0x100, SPR_WEP_CTL
+	mov [TXHDR_PHYCTL, OFFR_TXHDR], SPR_TXE0_PHY_CTL
+
+/* debugging: Put the frame onto the PHY. */
+mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
+or (TXE_SELECT_DST_PHY), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
+ wait:	jnext COND_TX_BUSY, wait-			/* Wait for the TXE to start */
+ wait:	jext COND_TX_BUSY, wait-			/* Wait for the TXE to finish */
+
+
+	/* Revert the 4318 TSSI workaround */
+	jzx 0, SHM_HF_MI_4318TSSI, [SHM_HF_MI], 0, no_4318tssi_workaround+
+	mov GPHY_ANAOVER, Ra
+	mov 0, Rb
+	call lr0, phy_write
+ no_4318tssi_workaround:
 
 	//TODO
 	jmp eventloop_idle
