@@ -40,7 +40,7 @@
 #define CONDREG_TX		2
 #define COND_TX_NOW		EXTCOND(CONDREG_TX, 0)		/* TX should be done now */
 #define COND_TX_POWER		EXTCOND(CONDREG_TX, 1)		/* FIXME: TX power related */
-#define COND_TX_2		EXTCOND(CONDREG_TX, 2)		/* FIXME: Unknown meaning */
+#define COND_TX_HIT_PHY		EXTCOND(CONDREG_TX, 2)		/* Indicates that the TX PLCP hit the PHY */
 #define COND_TX_PMQ		EXTCOND(CONDREG_TX, 3)		/* FIXME: PMQ related? */
 #define COND_MACEN		EXTCOND(CONDREG_TX, 4)		/* MAC enabled */
 #define COND_TX_NAV		EXTCOND(CONDREG_TX, 9)		/* FIXME: NAV/slot update required? */

@@ -152,7 +152,7 @@ check_events:
 	jext EOI(COND_TX_NOW), h_transmit_frame
 	jext EOI(COND_TX_POWER), h_tx_power_updates
 	jext EOI(COND_TX_UNDERFLOW), h_tx_underflow
-	jext COND_TX_2, h_tx_postprocess
+	jext COND_TX_HIT_PHY, h_tx_hit_phy
 	jext COND_TX_PHYERR, h_phy_tx_error
 	jnzx 3, 1, SPR_BRWK0, 0, h_ifs_updates
  ifs_updates_not_needed:
@@ -287,6 +287,7 @@ jmp no_edcf+//FIXME
 	mov (FIFO_BE << CUR_TXFIFO_SHIFT), Ra
 	je [SHM_CUR_TXFIFO], Ra, eventloop_idle /* OK, already using it */
 	call lr0, tx_engine_stop
+	jext EOI(COND_TX_NOW), h_transmit_frame
 	mov (FIFO_BE << CUR_TXFIFO_SHIFT), [SHM_CUR_TXFIFO] /* We're using this FIFO */
 
  load_txhdr:
@@ -423,7 +424,7 @@ h_transmit_responseframe:
 
 /* --- Handler: Do some TX power radio register updates FIXME --- */
 h_tx_power_updates:
-	MARKER(0)
+//	MARKER(0)
 	//TODO
 	jmp eventloop_restart
 
@@ -433,8 +434,10 @@ h_tx_underflow:
 	//TODO
 	jmp eventloop_idle
 
-/* --- Handler: Do some post-TX processing --- */
-h_tx_postprocess:
+/* --- Handler: The current TX-packet PLCP hit the PHY --- */
+h_tx_hit_phy:
+	//TODO
+	jext EOI(COND_TX_HIT_PHY), eventloop_idle
 	MARKER(0)
 	//TODO
 	jmp eventloop_idle

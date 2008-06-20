@@ -200,7 +200,7 @@
 #define SPR_TXE0_SELECT				spr0b4
 #define  TXE_SELECT_DST				0x0003 /* Destination code mask */
 #define   TXE_SELECT_DST_SHM			0x0001 /* Destination code for the SHM */
-#define   TXE_SELECT_DST_PHY			0x0002 /* ??FIXME: Destination code for the PHY? */
+#define   TXE_SELECT_DST_PHY			0x0002 /* Destination code for the PHY */
 #define   TXE_SELECT_DST_DISCARD		0x0003 /* Destination code for discarding */
 #define  TXE_SELECT_USE_TXCNT			2 /* bit2: Use the TX_COUNT register */
 #define  TXE_SELECT_UNK0x20			5 /* bit5: ??FIXME: Unknown meaning. Seems to be PHY related. */
