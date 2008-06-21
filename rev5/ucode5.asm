@@ -152,13 +152,14 @@ check_events:
 	jext EOI(COND_TX_NOW), h_transmit_frame
 	jext EOI(COND_TX_POWER), h_tx_power_updates
 	jext EOI(COND_TX_UNDERFLOW), h_tx_underflow
-	jext COND_TX_HIT_PHY, h_tx_hit_phy
+	jext COND_TX_DONE, h_tx_done
 	jext COND_TX_PHYERR, h_phy_tx_error
 	jnzx 3, 1, SPR_BRWK0, 0, h_ifs_updates
  ifs_updates_not_needed:
 	jext EOI(COND_RX_WME8), h_tx_timers_setup
 	jext EOI(COND_RX_PLCP), h_received_valid_plcp
 	jext COND_RX_COMPLETE, h_rx_complete_handler
+	jext COND_TX_PMQ, h_pmq_updates
 	jext EOI(COND_RX_BADPLCP), h_received_bad_plcp
 	jnext COND_RX_FIFOFULL, no_overflow+
 	jnext COND_4_C6, h_rx_fifo_overflow
@@ -208,7 +209,7 @@ tx_engine_stop:
 	and SPR_BRC, (~0x27), SPR_BRC
 	mov 0, SPR_TXE0_SELECT
 	orx 0, 15, 0, SPR_TXE0_TIMEOUT, SPR_TXE0_TIMEOUT /* clear bit 15 */
-	and SPR_BRC, (~0x10), SPR_BRC
+	and SPR_BRC, (~BIT(BRC_TXMOREFRAGS)), SPR_BRC /* no more frags */
 	jzx 0, FLG0_EOI_TXECOND, R_FLAGS0, 0, no_clear_conditions+
  wait:	jnext EOI(COND_TX_POWER), wait- /* Wait to trigger once */
 	extcond_eoi_only(COND_TX_UNDERFLOW)
@@ -262,7 +263,7 @@ h_channel_setup:
 /* --- Handler: A transmission may start now. First stage of TX engine setup. */
 h_tx_engine_may_start:
  wait:	jext EOI(COND_PHY6), wait-		/* Wait for the condition to clear */
-	jnand SPR_BRC, 0x1F, eventloop_idle	/* No transmission pending */
+	jnand SPR_BRC, (BIT(BRC_TXMOREFRAGS) | 0xF), eventloop_idle	/* No transmission pending */
 
 	call lr0, bluetooth_is_transmitting	/* Check if BT is transmitting */
 	jne Ra, 0, out_disable+			/* Bail out and disable TX */
@@ -319,6 +320,12 @@ h_flag_bcn_tmpl_update:
 h_atim_win_end:
 	MARKER(0)
 	//TODO
+	jmp eventloop_restart
+
+/* --- Handler: PMQ updates? --- */
+h_pmq_updates:
+	//TODO
+	MARKER(0)
 	jmp eventloop_restart
 
 /* --- Handler: Transmit the next frame on the current FIFO ---
@@ -424,7 +431,64 @@ h_transmit_responseframe:
 
 /* --- Handler: Do some TX power radio register updates FIXME --- */
 h_tx_power_updates:
-//	MARKER(0)
+	and SPR_BRC, (~0x20), SPR_BRC
+	mov 0x8700, SPR_WEP_CTL
+
+	/* Revert the TSSI-reset workaround */
+	jzx 0, SHM_HF_LO_TSSIRPSMW, [SHM_HF_LO], 0, no_tssireset_workaround+
+	mov R2050_TXCTL0, Ra
+	mov 0x31, Rb
+	call lr0, radio_write
+ no_tssireset_workaround:
+
+	jnzx 0, FCTL_MOREFRAGS, [TXHDR_FCTL, OFFR_TXHDR], 0, morefrags+
+	/* This is the last fragment. Tell the hardware. */
+	and SPR_BRC, (~BIT(BRC_TXMOREFRAGS)), SPR_BRC
+ morefrags:
+
+	jext EOI(COND_TX_UNDERFLOW), h_tx_underflow
+	jext EOI(COND_TX_PHYERR), h_phy_tx_error
+
+	/* Want to transmit a beacon, ACK or CTS? Hurry up. */
+	jext COND_NEED_BEACON, xmit_next+
+	jext COND_NEED_RESPONSEFR, xmit_next+
+
+	jext COND_4_C7, eventloop_restart /* Some error condition */
+
+	// TODO: If this was just the self-CTS, we need to send the real frame now.
+	// Prepare the TXE for the real frame
+
+
+	/* The RX FIFO or crypto engine is busy? First wait for it to finish. */
+ rx_wait:
+	jext EOI(COND_RX_FIFOFULL), rx_overflow+
+	jext COND_RX_FIFOBUSY, rx_wait-
+	jext COND_RX_CRYPTBUSY, rx_wait-
+ continue_after_rxoverflow:
+
+	jext COND_INTERMEDIATE, intermediate+
+	orx 0, TXE_FIFO_CMD_TXDONE, 1, SPR_TXE0_FIFO_CMD, SPR_TXE0_FIFO_CMD
+
+	/* Send the TX status to the kernel driver. */
+	jzx 0, MACCTL_DISCTXSTAT, SPR_MAC_CTLHI, 0, no_txstat+
+	mov 0, SPR_TX_STATUS3 // FIXME PHY TX status
+	mov 0, SPR_TX_STATUS2 // FIXME seq number
+	mov [TXHDR_COOKIE, OFFR_TXHDR], SPR_TX_STATUS1
+	or 0, 1, SPR_TX_STATUS0 //FIXME MAC status
+ no_txstat:
+
+	orx 0, 11, 0, SPR_BRC, SPR_BRC /* clear 0x800 */
+
+	jmp eventloop_restart
+ xmit_next:
+	and SPR_BRC, (~0x3), SPR_BRC
+	jmp eventloop_restart
+ rx_overflow:
+	/* Whoopsy, TX took too long and we overflew the RX fifo */
+	//TODO
+	jmp continue_after_rxoverflow-
+ intermediate:
+	MARKER(0)
 	//TODO
 	jmp eventloop_restart
 
@@ -434,12 +498,12 @@ h_tx_underflow:
 	//TODO
 	jmp eventloop_idle
 
-/* --- Handler: The current TX-packet PLCP hit the PHY --- */
-h_tx_hit_phy:
+/* --- Handler: The PHY completely transmitted the current transmission --- */
+h_tx_done:
 	//TODO
-	jext EOI(COND_TX_HIT_PHY), eventloop_idle
+	jext EOI(COND_TX_DONE), eventloop_idle
+	//XXX This will probably never trigger
 	MARKER(0)
-	//TODO
 	jmp eventloop_idle
 
 /* --- Handler: Do some NAV and slot updates --- */

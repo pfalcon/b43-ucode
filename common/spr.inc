@@ -85,6 +85,7 @@
 #define  MACCMD_CCA				3 /* bit3: Channel clear assessment */
 #define  MACCMD_BGNOISE				4 /* bit4: BG-noise measurement request */
 #define SPR_BRC					spr048
+#define  BRC_TXMOREFRAGS			4 /* bit4: Set if there are more TX frags to come */
 #define SPR_PHY_HDR_Parameter			spr049
 #define SPR_Postcard				spr04a
 #define SPR_Postcard_Location_Low		spr04b
@@ -177,6 +178,7 @@
 #define SPR_TXE0_0x3c				spr09e
 #define SPR_TXE0_0x3e				spr09f
 #define SPR_TXE0_FIFO_CMD			spr0a0
+#define  TXE_FIFO_CMD_TXDONE			13 /* bit13: Set after the current transmission finished */
 #define  TXE_FIFO_CMD_COPY			14 /* bit14: Start copying of data */
 #define SPR_TXE0_FIFO_FLUSH			spr0a1
 #define SPR_TXE0_FIFO_THRES			spr0a2
