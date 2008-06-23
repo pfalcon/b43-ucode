@@ -256,7 +256,6 @@ h_channel_setup:
  skip_beacon_updates:
 	jext EOI(COND_RX_ATIMWINEND), h_atim_win_end
 	jzx 0, TXE_CTL_ENABLED, SPR_TXE0_CTL, 0, h_tx_engine_may_start
-//MARKER(0)
 	//TODO
 	jmp eventloop_restart
 
@@ -388,26 +387,28 @@ h_trigger_transmission:
 
 	/* FIXME: Send SELFCTS or RTS if needed */
 
-	/* Now poke the TXE */
-	//TODO
-
-/* debugging: Put RTS to SHM 0x800 */
-mov 0x800, SPR_TXE0_TX_SHM_ADDR
-mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
-mov 24, SPR_TXE0_TX_COUNT
-or (TXE_SELECT_DST_SHM | BIT(TXE_SELECT_USE_TXCNT)), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
- wait:	jnext COND_TX_BUSY, wait-			/* Wait for the TXE to start */
- wait:	jext COND_TX_BUSY, wait-			/* Wait for the TXE to finish */
+	/* Discard the RTS or CTS-to-self frame */
+	mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
+	mov 24, SPR_TXE0_TX_COUNT
+	or (TXE_SELECT_DST_DISCARD | BIT(TXE_SELECT_USE_TXCNT)), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
 
 	mov 0x100, SPR_WEP_CTL
 	mov [TXHDR_PHYCTL, OFFR_TXHDR], SPR_TXE0_PHY_CTL
 
-/* debugging: Put the frame onto the PHY. */
-mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
-or (TXE_SELECT_DST_PHY), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
- wait:	jnext COND_TX_BUSY, wait-			/* Wait for the TXE to start */
- wait:	jext COND_TX_BUSY, wait-			/* Wait for the TXE to finish */
+	/* Transmit the frame */
+	mov [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
+	or (TXE_SELECT_DST_PHY | 0x20), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
 
+	/* Wait for the packet to hit the PHY */
+	add SPR_TSF_WORD0, 16, Ra	/* OFDM PHY delay is 16 microseconds */
+	je [SHM_PHYTYPE], PHYTYPE_A, is_ofdm+
+	jnzx 1, 0, [TXHDR_PHYCTL, OFFR_TXHDR], 0, is_ofdm+
+	add SPR_TSF_WORD0, 40, Ra	/* CCK PHY delay is 40 microseconds */
+ is_ofdm:
+ wait:	jext COND_TX_DONE, eventloop_restart /* Oops, PHY already finished transmission. */
+	jne SPR_TSF_WORD0, Ra, wait-
+
+	//TODO measure the TSSI
 
 	/* Revert the 4318 TSSI workaround */
 	jzx 0, SHM_HF_MI_4318TSSI, [SHM_HF_MI], 0, no_4318tssi_workaround+
@@ -416,7 +417,17 @@ or (TXE_SELECT_DST_PHY), [SHM_CUR_TXFIFO], SPR_TXE0_SELECT
 	call lr0, phy_write
  no_4318tssi_workaround:
 
-	//TODO
+	/* Wait for some packet count. Not sure what this does... */
+	jnzx 0, 11, SPR_IFS_STAT, 0, eventloop_idle
+	jg SPR_NAV_0x04, 160, eventloop_idle
+	mov 0xFFFF, SPR_NAV_0x04
+ pkt_cnt_loop:
+	mov APHY_PACKCNT, Ra
+	call lr0, phy_read
+	and Ra, 0x1F, Ra
+	je Ra, 22, pkt_cnt_loop-
+	mov 0, SPR_NAV_0x04
+
 	jmp eventloop_idle
 
 /* --- Handler: Transmit a beacon frame. --- */
@@ -478,6 +489,7 @@ h_tx_power_updates:
  no_txstat:
 
 	orx 0, 11, 0, SPR_BRC, SPR_BRC /* clear 0x800 */
+	mov 0xFFFF, [SHM_CUR_TXFIFO] /* invalid */
 
 	jmp eventloop_restart
  xmit_next:
