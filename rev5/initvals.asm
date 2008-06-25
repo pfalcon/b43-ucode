@@ -91,6 +91,8 @@
 	shm16 SHM_KEY_TABLE_START, HOST_SHM_SHARED, (SHM_KTP * 2)
 	/* Unused padding in RX header */
 	shm16 0, HOST_SHM_SHARED, (SHM_RXHDR_PAD * 2)
+	/* Current TX FIFO = invalid */
+	shm16 0xFFFF, HOST_SHM_SHARED, (SHM_CUR_TXFIFO * 2)
 
 	/* TX header scratch space offset lookup table.
 	 * This initializes the lookup table with the start addresses of

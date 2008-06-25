@@ -31,6 +31,13 @@
 /* The PLCP header length; in bytes. */
 #define PLCP_HDR_LEN		6
 
+/* PLCP header CCK-encoding ratecodes.
+ * The ratecode is stored in the first byte of the PLCP header. */
+#define PLCP_CCK_1M		0x0A /* 1 MBit/s */
+#define PLCP_CCK_2M		0x14 /* 2 MBit/s */
+#define PLCP_CCK_5M		0x37 /* 5 MBit/s */
+#define PLCP_CCK_11M		0x6E /* 11 MBit/s */
+
 
 /* Frame control field WORD(!)-offset in the frame */
 #define FCTL_WOFFSET		((PLCP_HDR_LEN + 0) / 2)

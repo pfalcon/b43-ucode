@@ -257,6 +257,7 @@ h_channel_setup:
 	jext EOI(COND_RX_ATIMWINEND), h_atim_win_end
 	jzx 0, TXE_CTL_ENABLED, SPR_TXE0_CTL, 0, h_tx_engine_may_start
 	//TODO
+MARKER(0)
 	jmp eventloop_restart
 
 /* --- Handler: A transmission may start now. First stage of TX engine setup. */
@@ -594,6 +595,11 @@ h_received_valid_plcp:
 	srx FCTL_FTYPE_M, FCTL_FTYPE_S, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, Ri
 	/* Put the framesubtype into Rj */
 	srx FCTL_STYPE_M, FCTL_STYPE_S, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, Rj
+	/* Put the frame encoding into Rk. 0=CCK, 1=OFDM */
+	mov 1 /* OFDM */, Rk
+	je [SHM_PHYTYPE], PHYTYPE_A, is_aphy+
+	srx 0, RXE_ENCODING_OFDM, SPR_RXE_ENCODING, 0, Rk
+ is_aphy:
 
 	and R_FLAGS0, (~(1 << FLG0_RXFRAME_WDS)), R_FLAGS0
 	jzx 0, FCTL_TODS, [(SHM_RXFRAME_HDR + FCTL_WOFFSET)], 0, no_wds+
@@ -624,6 +630,12 @@ h_received_valid_plcp:
 	mov [(SHM_RXFRAME_HDR + DURID_WOFFSET)], SPR_NAV_ALLOCATION
 	orx 4, 11, 0x2, SPR_NAV_CTL, SPR_NAV_CTL
  no_dur_write:
+
+	/* Make sure a Bluetooth transmission cannot interrupt this packet. */
+	jnext COND_RX_RAMATCH, no_bt_notify+
+	mov 1, Ra
+	call lr0, bluetooth_notify
+ no_bt_notify:
 
 	/* TODO: Init hardware crypto engine, if the packet is protected. */
 	mov 0x8300, SPR_WEP_CTL				/* Disable crypto */
@@ -657,12 +669,25 @@ h_received_valid_plcp:
 
 	/* Check the FCS */
 	jext COND_RX_FCS_GOOD, fcs_ok+
+	/* FCS check failed. This is a bad frame. */
 	or [SHM_RXHDR_MACSTAT0], (1 << MACSTAT0_FCSERR), [SHM_RXHDR_MACSTAT0]
+	jzx 0, MACCTL_KEEP_BAD, SPR_MAC_CTLHI, 0, drop_received_frame
  fcs_ok:
-	jnzx 0, MACCTL_KEEP_BAD, SPR_MAC_CTLHI, 0, no_drop_bad+
-	jnext COND_RX_FCS_GOOD, drop_received_frame
- no_drop_bad:
 
+	/* Push all data frames to the host, immediately. */
+	je Ri, FTYPE_DATA, push_frame_to_host+ /* frametype == DATA */
+
+	/* Apply the G-PHY RX SYM workaround for bad control and management frames. */
+	jext COND_RX_FCS_GOOD, no_sym_workaround+
+	/* frame-type is passed in Ri. frame-encoding is passed in Rk. */
+	call lr0, gphy_rx_sym_workaround
+	/* If we could not apply the workaround, we must drop the frame. */
+	je Ra, 0, drop_received_frame
+ no_sym_workaround:
+
+
+	/* We're ready to send the current RX frame to the host. */
+ push_frame_to_host:
 	call lr0, put_rx_frame_into_fifo
 	jne Ra, 0, h_rx_fifo_overflow
 
@@ -977,10 +1002,10 @@ bluetooth_is_transmitting:
 	ret lr0, lr0
 
 /* --- Function: Depending on Ra, notify TX or IDLE to the BT module ---
- * Notify either "WLAN is transmitting" or "WLAN is not transmitting"
+ * Notify either "BT must block TX" or "BT may transmit"
  * to the Bluetooth module. The condition is passed in Ra.
- * If Ra is 0, then WLAN-is-NOT-transmitting is notified to BT.
- * If Ra is 1, then WLAN-is-transmitting is notified to BT.
+ * If Ra is 0, then BT-may-transmit is notified to BT.
+ * If Ra is 1, then BT-blocked is notified to BT.
  * Link Register: lr0
  */
 bluetooth_notify:
@@ -998,6 +1023,29 @@ bluetooth_notify:
  */
 update_qos_avail:
 	//TODO
+	ret lr0, lr0
+
+/* --- Function: G-PHY RX SYM workaround ---
+ * This checks whether the G-PHY RX SYM workaround is required
+ * and invokes it as needed.
+ * The RX-frame-type is passed in Ri.
+ * The RX-frame-encoding is passed in Rk.
+ * Returns 0 in Ra, if the workaround was NOT invoked.
+ * Returns 1 in Ra, if the workaround was invoked.
+ * Link Register: lr0
+ */
+gphy_rx_sym_workaround:
+	mov 0, Ra
+	jzx 0, SHM_HF_LO_SYMW, [SHM_HF_LO], 0, out+	/* Workaround disabled */
+	jne Ri, FTYPE_CTL, out+				/* Only for control frames */
+	jne Rk, 0 /* CCK */, out+			/* Only for CCK frames */
+	and [(SHM_RXFRAME_HDR + 0)], 0xFF, Rb		/* Rb = PLCP ratecode */
+	jl Rb, PLCP_CCK_5M, out+			/* Only for 5M and 11M */
+	jne [(SHM_RXFRAME_HDR + 1)], 80, out+		/* Only for length-code == 80 */
+	/* Apply the workaround */
+	or SPR_IFS_CTL, 0x10, SPR_IFS_CTL
+	mov 1, Ra
+ out:
 	ret lr0, lr0
 
 /* --- Function: Lowlevel panic helper --- 

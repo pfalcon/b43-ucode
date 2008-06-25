@@ -21,7 +21,8 @@
 #define SPR_RXE_FRAMELEN			spr00c
 #define SPR_RXE_0x1a				spr00d
 #define  RXE_0x1a_OVERFLOW			15 /* bit15: Indicate FIFO overflow */
-#define SPR_RXE_0x1c				spr00e
+#define SPR_RXE_ENCODING			spr00e
+#define  RXE_ENCODING_OFDM			13 /* bit13: Frame encoding was OFDM */
 #define SPR_RXE_0x1e				spr00f
 #define SPR_RCM_Control				spr010
 #define SPR_RCM_Match_Data			spr011
