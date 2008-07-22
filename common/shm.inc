@@ -22,6 +22,9 @@
 #define SHM_OFFSET(offset)	SHM(offset)
 
 
+/* BEGIN ABI: Start of the driver ABI definitions */
+
+
 /* Misc variables */
 #define SHM_WLCOREREV		SHM(0x016) /* 802.11 core revision */
 #define SHM_PCTLWDPOS		SHM(0x008)
@@ -192,6 +195,8 @@
 #define TXHDR_WSIZE		(104 / 2) /* Header size, in words */
 #define TXHDR_NR_COPY_BYTES	(TXHDR_RTSPLCP * 2) /* We copy everything up to the RTS header to SHM */
 
+
+/* END ABI: End of the driver ABI definitions */
 
 /* --- Misc offsets that are only valid for the OpenSource firmware. --- */
 
