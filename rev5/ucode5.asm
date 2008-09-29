@@ -94,7 +94,7 @@ entry_point:	/* ------ ENTRY POINT ------ */
 	mov 0xFF00, [SHM_ACKCTSPHYCTL]		/* ACK/CTS PHY TX control word */
 	mov 2, SPR_PHY_HDR_Parameter
 	mov R_MIN_CONTWND, R_CUR_CONTWND
-	and SPR_TSF_Random, R_CUR_CONTWND, SPR_IFS_BKOFFDELAY
+	and SPR_TSF_RANDOM, R_CUR_CONTWND, SPR_IFS_BKOFFTIME
 	mov (1 << GPT_STAT_8MHZ), SPR_TSF_GPT0_STAT	/* GP Timer 0: 8MHz */
 	mov lo16(280000), SPR_TSF_GPT0_CNTLO		/* GP Timer 0: Counter = 280,000 */
 	mov hi16(280000), SPR_TSF_GPT0_CNTHI
@@ -1045,6 +1045,23 @@ gphy_rx_sym_workaround:
 	/* Apply the workaround */
 	or SPR_IFS_CTL, 0x10, SPR_IFS_CTL
 	mov 1, Ra
+ out:
+	ret lr0, lr0
+
+/* --- Function: Set the next Backoff Time configuration in hardware ---
+ * This writes the Backoff Time configuration to hardware.
+ * Link Register: lr0
+ */
+set_backoff_time:
+	jnzx 0, SHM_HF_LO_EDCF, [SHM_HF_LO], 0, edcf_enabled+
+	/* EDCF is disabled.
+	 * Write a random backoff time from 0 to R_CUR_CONTWND slots. */
+	and SPR_TSF_RANDOM, R_CUR_CONTWND, SPR_IFS_BKOFFTIME
+	jmp out+
+ edcf_enabled:
+	/* TODO: For EDCA we need to take backoff configuration for
+	 * the current AC into account. */
+	mov r0, r0//avoid warning
  out:
 	ret lr0, lr0
 

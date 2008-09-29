@@ -5,9 +5,9 @@
 
 
 /* Registers with a special function throughout the whole code. */
-#define R_MIN_CONTWND		r3
-#define R_MAX_CONTWND		r4
-#define R_CUR_CONTWND		r5
+#define R_MIN_CONTWND		r3 /* The minimum contention window. This is guaranteed to be a bitmask. */
+#define R_MAX_CONTWND		r4 /* The maximum contention window. This is guaranteed to be a bitmask. */
+#define R_CUR_CONTWND		r5 /* The current contention window. This is guaranteed to be a bitmask. */
 #define R_SHORT_RETRY		r6
 #define R_LONG_RETRY		r7
 #define R_DTIM_CNT		r8

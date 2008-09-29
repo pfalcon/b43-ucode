@@ -342,7 +342,7 @@
 #define SPR_TSF_GPT1_VALLO			spr12a
 #define SPR_TSF_GPT0_VALHI			spr12b
 #define SPR_TSF_GPT1_VALHI			spr12c
-#define SPR_TSF_Random				spr12d
+#define SPR_TSF_RANDOM				spr12d
 #define SPR_TSF_0x5c				spr12e
 #define SPR_TSF_0x5e				spr12f
 #define SPR_TSF_0x60				spr130
@@ -366,7 +366,7 @@
 #define SPR_IFS_slot				spr142
 #define SPR_IFS_0x06				spr143
 #define SPR_IFS_CTL				spr144
-#define SPR_IFS_BKOFFDELAY			spr145
+#define SPR_IFS_BKOFFTIME			spr145 /* BackoffTime; in units of PHY slots */
 #define SPR_IFS_0x0c				spr146
 #define SPR_IFS_0x0e				spr147
 #define SPR_IFS_STAT				spr148
